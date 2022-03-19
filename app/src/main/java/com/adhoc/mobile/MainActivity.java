@@ -1,8 +1,8 @@
-package com.adhoc.network;
-
-import androidx.appcompat.app.AppCompatActivity;
+package com.adhoc.mobile;
 
 import android.os.Bundle;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 

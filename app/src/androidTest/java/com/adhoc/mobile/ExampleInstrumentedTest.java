@@ -1,4 +1,4 @@
-package com.adhoc.network;
+package com.adhoc.mobile;
 
 import android.content.Context;
 
