@@ -1,9 +1,5 @@
 package com.adhoc.mobile.core.application;
 
-import android.os.Build;
-
-import androidx.annotation.RequiresApi;
-
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -31,16 +27,17 @@ public class Security {
         privateKey = pair.getPrivate();
         publicKey = pair.getPublic();
     }
+
     public static PublicKey getPublicKey() {
         return publicKey;
     }
 
-    public static PrivateKey getPrivateKey() {
-        return privateKey;
-    }
-
     public static void setPublicKey(PublicKey publicKey) {
         Security.publicKey = publicKey;
+    }
+
+    public static PrivateKey getPrivateKey() {
+        return privateKey;
     }
 
     public static void setPrivateKey(PrivateKey privateKey) {
@@ -48,7 +45,7 @@ public class Security {
     }
 
 
-    private String BytestoHex(byte[] bytes){
+    private String BytestoHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes)
             sb.append(String.format("%02X", b));
@@ -60,10 +57,11 @@ public class Security {
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i+1), 16));
+                    + Character.digit(s.charAt(i + 1), 16));
         }
         return data;
     }
+
     public String encrypt(String Message, PublicKey publicKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         Cipher encryptCipher = Cipher.getInstance("RSA");
         encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
@@ -79,6 +77,6 @@ public class Security {
         byte[] encryptedMessageBytes = hexStringToByteArray(Message);
         byte[] decryptedMessageBytes = decryptCipher.doFinal(encryptedMessageBytes);
         String decryptedMessage = new String(decryptedMessageBytes, StandardCharsets.UTF_8);
-        return  decryptedMessage;
+        return decryptedMessage;
     }
 }

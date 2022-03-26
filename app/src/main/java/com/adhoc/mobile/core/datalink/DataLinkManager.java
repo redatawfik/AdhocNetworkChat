@@ -2,6 +2,7 @@ package com.adhoc.mobile.core.datalink;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -23,9 +24,8 @@ import java.nio.charset.StandardCharsets;
 
 public class DataLinkManager {
 
-    private final String TAG = this.getClass().getName();
     private static final String NETWORK_NAME = "com.adhoc.mobile.core.datalink";
-
+    private final String TAG = this.getClass().getName();
     private final Strategy STRATEGY = Strategy.P2P_CLUSTER;
     private final ConnectionsClient connectionsClient;
     private final Context context;
@@ -35,6 +35,8 @@ public class DataLinkManager {
     private final PayloadCallback payloadCallback = new PayloadCallback() {
         @Override
         public void onPayloadReceived(@NonNull String endpointId, @NonNull Payload payload) {
+            Toast.makeText(context, "onPayloadReceived", Toast.LENGTH_SHORT).show();
+
             if (payload.getType() == Payload.Type.BYTES) {
                 byte[] receivedBytes = payload.asBytes();
                 String message = new String(receivedBytes, StandardCharsets.UTF_8);
@@ -48,32 +50,21 @@ public class DataLinkManager {
 
         @Override
         public void onPayloadTransferUpdate(@NonNull String s, @NonNull PayloadTransferUpdate payloadTransferUpdate) {
-
-        }
-    };
-    // Callbacks for finding other devices
-    private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
-        @Override
-        public void onEndpointFound(@NonNull String endpointId, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
-            Log.i(TAG, "Found endpoint with id = " + endpointId);
-            connectionsClient.requestConnection(myName, endpointId, connectionLifecycleCallback);
-        }
-
-        @Override
-        public void onEndpointLost(@NonNull String endpointId) {
-            Log.i(TAG, "Lost endpoint with id = " + endpointId);
+            Toast.makeText(context, "onPayloadTransferUpdate", Toast.LENGTH_SHORT).show();
         }
     };
     String tempEndpointName = "";
     private final ConnectionLifecycleCallback connectionLifecycleCallback = new ConnectionLifecycleCallback() {
         @Override
         public void onConnectionInitiated(@NonNull String endpointId, @NonNull ConnectionInfo connectionInfo) {
+            Toast.makeText(context, "onConnectionInitiated", Toast.LENGTH_SHORT).show();
             connectionsClient.acceptConnection(endpointId, payloadCallback);
             tempEndpointName = connectionInfo.getEndpointName();
         }
 
         @Override
         public void onConnectionResult(@NonNull String endpointId, @NonNull ConnectionResolution result) {
+            Toast.makeText(context, "onConnectionResult", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "connection status is " + result.getStatus());
             if (result.getStatus().isSuccess()) {
                 callbacks.onConnectionSucceed(endpointId, tempEndpointName);
@@ -82,7 +73,23 @@ public class DataLinkManager {
 
         @Override
         public void onDisconnected(@NonNull String endpointId) {
+            Toast.makeText(context, "onDisconnected", Toast.LENGTH_SHORT).show();
             callbacks.onDisconnected(endpointId);
+        }
+    };
+    // Callbacks for finding other devices
+    private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
+        @Override
+        public void onEndpointFound(@NonNull String endpointId, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
+            Toast.makeText(context, "onEndpointFound", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Found endpoint with id = " + endpointId);
+            connectionsClient.requestConnection(myName, endpointId, connectionLifecycleCallback);
+        }
+
+        @Override
+        public void onEndpointLost(@NonNull String endpointId) {
+            Toast.makeText(context, "onEndpointLost", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Lost endpoint with id = " + endpointId);
         }
     };
 
@@ -129,6 +136,8 @@ public class DataLinkManager {
                 connectionLifecycleCallback,
                 options
         );
+
+        Toast.makeText(context, "startAdvertising", Toast.LENGTH_SHORT).show();
     }
 
     private void startDiscovery() {
@@ -140,6 +149,8 @@ public class DataLinkManager {
                 endpointDiscoveryCallback,
                 options
         );
+
+        Toast.makeText(context, "startDiscovery", Toast.LENGTH_SHORT).show();
     }
 
     private void stopAdvertising() {

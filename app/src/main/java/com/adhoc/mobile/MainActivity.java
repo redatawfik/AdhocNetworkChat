@@ -2,6 +2,7 @@ package com.adhoc.mobile;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -11,6 +12,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.adhoc.mobile.core.application.AdhocManager;
 import com.adhoc.mobile.core.application.AdhocManagerCallbacks;
@@ -19,13 +22,10 @@ import com.adhoc.mobile.core.application.Endpoint;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
-
-    private final String TAG = this.getClass().getName();
-
+public class MainActivity extends AppCompatActivity
+        implements ContactsAdapter.RecyclerViewClickListener {
 
     private static final String[] REQUIRED_PERMISSIONS;
-    private final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
 
     static {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -61,11 +61,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    List<Endpoint> endpointList;
+    private final String TAG = this.getClass().getName();
+    private final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
+    private AdhocManager adhocManager;
+    private List<Contact> contactList;
+    private RecyclerView contactsRecyclerView;
+    private ContactsAdapter contactAdapter;
     AdhocManagerCallbacks callbacks = new AdhocManagerCallbacks() {
         @Override
         public void onConnectionSucceed(Endpoint endpoint) {
-            endpointList.add(endpoint);
+            contactList.add(new Contact(endpoint.getId(), endpoint.getName()));
+            contactAdapter.notifyDataSetChanged();
+            contactsRecyclerView.setAdapter(contactAdapter);
+            Toast.makeText(MainActivity.this, "added to rececler view", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -79,17 +87,34 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private AdhocManager adhocManager;
+    /**
+     * Returns true if the app was granted all the permissions. Otherwise, returns false.
+     */
+    private static boolean hasPermissions(Context context, String... permissions) {
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(context, permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        endpointList = new ArrayList<>();
+        String name = getIntent().getStringExtra("EXTRA_NAME");
 
-        adhocManager = new AdhocManager(this, "Reda", callbacks);
+        contactList = new ArrayList<>();
 
+        adhocManager = new AdhocManager(this, name, callbacks);
+
+        contactsRecyclerView = (RecyclerView) findViewById(R.id.rvContacts);
+        contactAdapter = new ContactsAdapter(contactList, this);
+        contactsRecyclerView.setAdapter(contactAdapter);
+        contactsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         // TODO
         adhocManager.joinNetwork();
@@ -104,19 +129,6 @@ public class MainActivity extends AppCompatActivity {
         if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
             requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_REQUIRED_PERMISSIONS);
         }
-    }
-
-    /**
-     * Returns true if the app was granted all the permissions. Otherwise, returns false.
-     */
-    private static boolean hasPermissions(Context context, String... permissions) {
-        for (String permission : permissions) {
-            if (ContextCompat.checkSelfPermission(context, permission)
-                    != PackageManager.PERMISSION_GRANTED) {
-                return false;
-            }
-        }
-        return true;
     }
 
     @Override
@@ -139,5 +151,14 @@ public class MainActivity extends AppCompatActivity {
             i++;
         }
         recreate();
+    }
+
+    @Override
+    public void onClick(int position) {
+        Contact contact = contactList.get(position);
+        Intent intent = new Intent(this, ChatActivity.class);
+        intent.putExtra("EXTRA_ID", contact.getId());
+        intent.putExtra("EXTRA_NAME", contact.getName());
+        startActivity(intent);
     }
 }

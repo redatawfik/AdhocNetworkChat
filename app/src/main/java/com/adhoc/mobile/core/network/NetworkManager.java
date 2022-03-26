@@ -57,9 +57,9 @@ public class NetworkManager {
         dataLinkManager.joinNetwork();
     }
 
-    public void sendMessage(String message) {
+    public void sendMessage(String message, String destinationId) {
         // TODO(Look in Routing table)
-//        dataLinkManager.sendMessage(message,);
+        dataLinkManager.sendMessage(message, destinationId);
     }
 
     public void leaveNetwork() {
