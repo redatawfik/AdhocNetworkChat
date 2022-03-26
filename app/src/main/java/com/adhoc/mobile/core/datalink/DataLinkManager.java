@@ -23,13 +23,13 @@ import java.nio.charset.StandardCharsets;
 
 public class DataLinkManager {
 
-    private static final String TAG = DataLinkManager.class.getPackage().toString();
+    private final String TAG = this.getClass().getName();
     private static final String NETWORK_NAME = "com.adhoc.mobile.core.datalink";
 
     private final Strategy STRATEGY = Strategy.P2P_CLUSTER;
     private final ConnectionsClient connectionsClient;
     private final Context context;
-    private final String myNetworkId;
+    private final String myName;
     private final DataLinkCallbacks callbacks;
 
     private final PayloadCallback payloadCallback = new PayloadCallback() {
@@ -51,19 +51,32 @@ public class DataLinkManager {
 
         }
     };
+    // Callbacks for finding other devices
+    private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
+        @Override
+        public void onEndpointFound(@NonNull String endpointId, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
+            Log.i(TAG, "Found endpoint with id = " + endpointId);
+            connectionsClient.requestConnection(myName, endpointId, connectionLifecycleCallback);
+        }
 
-
+        @Override
+        public void onEndpointLost(@NonNull String endpointId) {
+            Log.i(TAG, "Lost endpoint with id = " + endpointId);
+        }
+    };
+    String tempEndpointName = "";
     private final ConnectionLifecycleCallback connectionLifecycleCallback = new ConnectionLifecycleCallback() {
         @Override
         public void onConnectionInitiated(@NonNull String endpointId, @NonNull ConnectionInfo connectionInfo) {
             connectionsClient.acceptConnection(endpointId, payloadCallback);
+            tempEndpointName = connectionInfo.getEndpointName();
         }
 
         @Override
         public void onConnectionResult(@NonNull String endpointId, @NonNull ConnectionResolution result) {
-            Log.e(TAG, "connection status is " + result.getStatus());
+            Log.i(TAG, "connection status is " + result.getStatus());
             if (result.getStatus().isSuccess()) {
-                callbacks.onConnectionSucceed(endpointId);
+                callbacks.onConnectionSucceed(endpointId, tempEndpointName);
             }
         }
 
@@ -73,23 +86,9 @@ public class DataLinkManager {
         }
     };
 
-    // Callbacks for finding other devices
-    private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
-        @Override
-        public void onEndpointFound(@NonNull String endpointId, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
-            Log.i(TAG, "Found endpoint with id = " + endpointId);
-            connectionsClient.requestConnection(myNetworkId, endpointId, connectionLifecycleCallback);
-        }
 
-        @Override
-        public void onEndpointLost(@NonNull String endpointId) {
-            Log.i(TAG, "Lost endpoint with id = " + endpointId);
-        }
-    };
-
-
-    public DataLinkManager(Context context, String myNetworkId, DataLinkCallbacks callbacks) {
-        this.myNetworkId = myNetworkId;
+    public DataLinkManager(Context context, String myName, DataLinkCallbacks callbacks) {
+        this.myName = myName;
         this.context = context;
         this.callbacks = callbacks;
         this.connectionsClient = Nearby.getConnectionsClient(context);
@@ -125,7 +124,7 @@ public class DataLinkManager {
         AdvertisingOptions options = new AdvertisingOptions.Builder().setStrategy(STRATEGY).build();
         // Note: Advertising may fail. To keep this demo simple, we don't handle failures.
         connectionsClient.startAdvertising(
-                myNetworkId,
+                myName,
                 NETWORK_NAME,
                 connectionLifecycleCallback,
                 options

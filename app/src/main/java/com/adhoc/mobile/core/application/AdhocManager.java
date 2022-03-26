@@ -4,25 +4,40 @@ import android.content.Context;
 
 import com.adhoc.mobile.core.network.NetworkCallbacks;
 import com.adhoc.mobile.core.network.NetworkManager;
-import com.adhoc.mobile.core.util.User;
 
 public class AdhocManager {
+
+    private final String TAG = this.getClass().getName();
 
     private final Context context;
     private final AdhocManagerCallbacks callbacks;
     private final NetworkManager networkManager;
-    private final User user;
+    private final String myName;
 
-    private NetworkCallbacks networkCallbacks = new NetworkCallbacks() {
+    private final NetworkCallbacks networkCallbacks = new NetworkCallbacks() {
 
+        @Override
+        public void onConnectionSucceed(Endpoint endpoint) {
+            callbacks.onConnectionSucceed(endpoint);
+        }
+
+        @Override
+        public void onDisconnected(String endpoint) {
+            callbacks.onDisconnected(endpoint);
+        }
+
+        @Override
+        public void onPayloadReceived(String endpointId, String message) {
+            callbacks.onPayloadReceived(endpointId, message);
+        }
     };
 
-    public AdhocManager(Context context, User user, AdhocManagerCallbacks callbacks) {
+    public AdhocManager(Context context, String myName, AdhocManagerCallbacks callbacks) {
         this.context = context;
         this.callbacks = callbacks;
-        this.user = user;
+        this.myName = myName;
 
-        networkManager = new NetworkManager(context, networkCallbacks);
+        networkManager = new NetworkManager(context, myName, networkCallbacks);
     }
 
     public void joinNetwork() {
