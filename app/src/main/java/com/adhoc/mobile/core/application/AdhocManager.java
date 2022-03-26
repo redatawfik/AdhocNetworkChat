@@ -5,6 +5,13 @@ import android.content.Context;
 import com.adhoc.mobile.core.network.NetworkCallbacks;
 import com.adhoc.mobile.core.network.NetworkManager;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
 public class AdhocManager {
 
     private final String TAG = this.getClass().getName();
@@ -12,6 +19,7 @@ public class AdhocManager {
     private final Context context;
     private final AdhocManagerCallbacks callbacks;
     private final NetworkManager networkManager;
+    private final Security security;
     private final String myName;
 
     private final NetworkCallbacks networkCallbacks = new NetworkCallbacks() {
@@ -32,11 +40,13 @@ public class AdhocManager {
         }
     };
 
+
     public AdhocManager(Context context, String myName, AdhocManagerCallbacks callbacks) {
         this.context = context;
         this.callbacks = callbacks;
         this.myName = myName;
 
+        security = new Security();
         networkManager = new NetworkManager(context, myName, networkCallbacks);
     }
 
@@ -48,10 +58,11 @@ public class AdhocManager {
         networkManager.leaveNetwork();
     }
 
-    public void sendMessage(String message, String destination) {
+    public void sendMessage(String message, String destination) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
 
+        // 1.TODO we will need to extract public key from destination
+        String encryptedMessage = security.encrypt(message, security.getPublicKey());
+        networkManager.sendMessage(encryptedMessage);
 
-        // 1.TODO(Encrypt the message)
-        // 2.TODO(Call NetworkManager.sendMessage())
     }
 }
