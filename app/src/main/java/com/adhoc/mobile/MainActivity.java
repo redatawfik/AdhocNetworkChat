@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity
                     };
         }
     }
-
+    private String name;
     private final String TAG = this.getClass().getName();
     private final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
     private AdhocManager adhocManager;
@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity
             contactList.add(new Contact(endpoint.getId(), endpoint.getName()));
             contactAdapter.notifyDataSetChanged();
             contactsRecyclerView.setAdapter(contactAdapter);
-            Toast.makeText(MainActivity.this, "added to rececler view", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "added to recycler view", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         public void onPayloadReceived(String endpointId, String message) {
-
+            System.out.println("Main "+"Received : " +  endpointId + message);
         }
     };
 
@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String name = getIntent().getStringExtra("EXTRA_NAME");
+        name = getIntent().getStringExtra("EXTRA_NAME");
 
         contactList = new ArrayList<>();
 
@@ -115,6 +115,8 @@ public class MainActivity extends AppCompatActivity
         contactAdapter = new ContactsAdapter(contactList, this);
         contactsRecyclerView.setAdapter(contactAdapter);
         contactsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        contactList.add(new  Contact("0","seif"));
+        contactList.add(new  Contact("1","ahmed"));
 
         // TODO
         adhocManager.joinNetwork();
@@ -159,6 +161,7 @@ public class MainActivity extends AppCompatActivity
         Intent intent = new Intent(this, ChatActivity.class);
         intent.putExtra("EXTRA_ID", contact.getId());
         intent.putExtra("EXTRA_NAME", contact.getName());
+        intent.putExtra("EXTRA_USER_NAME", name);
         startActivity(intent);
     }
 }

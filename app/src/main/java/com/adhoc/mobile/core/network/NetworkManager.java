@@ -1,6 +1,7 @@
 package com.adhoc.mobile.core.network;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.adhoc.mobile.core.application.Endpoint;
 import com.adhoc.mobile.core.datalink.DataLinkCallbacks;
@@ -41,7 +42,8 @@ public class NetworkManager {
 
         @Override
         public void onPayloadReceived(String endpointId, String message) {
-
+            Log.i(TAG,"Received : " +  endpointId + message);
+            callbacks.onPayloadReceived(endpointId, message);
         }
     };
 

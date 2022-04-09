@@ -41,7 +41,7 @@ public class DataLinkManager {
                 byte[] receivedBytes = payload.asBytes();
                 String message = new String(receivedBytes, StandardCharsets.UTF_8);
 
-                Log.i(TAG, "Received : " + message);
+                Log.i(TAG, "Received : " + endpointId+ message);
 
                 // TODO(Inform network layer)
                 callbacks.onPayloadReceived(endpointId, message);
