@@ -27,17 +27,22 @@ public class Security {
     private static PublicKey publicKey;
     private static PrivateKey privateKey;
 
-    public Security() throws NoSuchAlgorithmException {
-        //generate Keys
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-        generator.initialize(1024);
-        KeyPair pair = generator.generateKeyPair();
-        privateKey = pair.getPrivate();
-        publicKey = pair.getPublic();
+    public Security() {
+        try {
+            //generate Keys
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(1024);
+            KeyPair pair = generator.generateKeyPair();
+            privateKey = pair.getPrivate();
+            publicKey = pair.getPublic();
+        }
+        catch (NoSuchAlgorithmException ex){
+            Log.println(Log.ERROR,"Generating Keys error", ex.getMessage());
+        }
     }
     public String getPublicKey() {
-        byte[] publiKeyBytes = publicKey.getEncoded();
-        return BytestoHex(publiKeyBytes);
+        byte[] publicKeyBytes = publicKey.getEncoded();
+        return BytestoHex(publicKeyBytes);
     }
 
     public static PrivateKey getPrivateKey() {
