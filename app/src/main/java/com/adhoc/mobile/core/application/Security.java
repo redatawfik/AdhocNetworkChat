@@ -1,16 +1,20 @@
 package com.adhoc.mobile.core.application;
 
 import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.X509EncodedKeySpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -31,8 +35,9 @@ public class Security {
         privateKey = pair.getPrivate();
         publicKey = pair.getPublic();
     }
-    public static PublicKey getPublicKey() {
-        return publicKey;
+    public String getPublicKey() {
+        byte[] publiKeyBytes = publicKey.getEncoded();
+        return BytestoHex(publiKeyBytes);
     }
 
     public static PrivateKey getPrivateKey() {
@@ -64,21 +69,36 @@ public class Security {
         }
         return data;
     }
-    public String encrypt(String Message, PublicKey publicKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher encryptCipher = Cipher.getInstance("RSA");
-        encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        byte[] secretMessageBytes = Message.getBytes(StandardCharsets.UTF_8);
-        byte[] encryptedMessageBytes = encryptCipher.doFinal(secretMessageBytes);
-        return BytestoHex(encryptedMessageBytes);
+    public String encrypt(String Message, String publicKeyString) {
+        try {
+            byte[] pkeyBytes = hexStringToByteArray(publicKeyString);
+            PublicKey publicKey =
+                    KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(pkeyBytes));
+            Cipher encryptCipher = Cipher.getInstance("RSA");
+            encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] secretMessageBytes = Message.getBytes(StandardCharsets.UTF_8);
+            byte[] encryptedMessageBytes = encryptCipher.doFinal(secretMessageBytes);
+            return BytestoHex(encryptedMessageBytes);
+        }
+        catch (Exception ex){
+            Log.println(Log.ERROR,"Encryption error", ex.getMessage());
+            return null;
+        }
     }
 
 
-    public String decrypt(String Message, PrivateKey privateKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher decryptCipher = Cipher.getInstance("RSA");
-        decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-        byte[] encryptedMessageBytes = hexStringToByteArray(Message);
-        byte[] decryptedMessageBytes = decryptCipher.doFinal(encryptedMessageBytes);
-        String decryptedMessage = new String(decryptedMessageBytes, StandardCharsets.UTF_8);
-        return  decryptedMessage;
+    public String decrypt(String Message, PrivateKey privateKey) {
+        try {
+            Cipher decryptCipher = Cipher.getInstance("RSA");
+            decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
+            byte[] encryptedMessageBytes = hexStringToByteArray(Message);
+            byte[] decryptedMessageBytes = decryptCipher.doFinal(encryptedMessageBytes);
+            String decryptedMessage = new String(decryptedMessageBytes, StandardCharsets.UTF_8);
+            return decryptedMessage;
+        }
+        catch (Exception ex){
+            Log.println(Log.ERROR, "Decryption Error", ex.getMessage());
+            return null;
+        }
     }
 }
