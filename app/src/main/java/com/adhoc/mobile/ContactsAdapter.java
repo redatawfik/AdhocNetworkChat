@@ -56,10 +56,10 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.ViewHo
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
+        private final Context context;
         public TextView nameTextView;
         public Button messageButton;
         public int position;
-        private final Context context;
 
         public ViewHolder(Context context, View itemView) {
 

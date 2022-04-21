@@ -15,35 +15,32 @@ import javax.crypto.NoSuchPaddingException;
 
 public class Security {
 
+    private PublicKey publicKey;
+    private final PrivateKey privateKey;
 
-    private static PublicKey publicKey;
-    private static PrivateKey privateKey;
-
-    public Security() throws NoSuchAlgorithmException {
+    public Security() {
         //generate Keys
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        KeyPairGenerator generator = null;
+        try {
+            generator = KeyPairGenerator.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        assert generator != null;
         generator.initialize(1024);
         KeyPair pair = generator.generateKeyPair();
         privateKey = pair.getPrivate();
         publicKey = pair.getPublic();
     }
 
-    public static PublicKey getPublicKey() {
-        return publicKey;
+    public String getPublicKey() {
+//        return publicKey.toString();
+        return "###This is the public key###";
     }
 
-    public static void setPublicKey(PublicKey publicKey) {
-        Security.publicKey = publicKey;
+    public void setPublicKey(PublicKey publicKey) {
+        this.publicKey = publicKey;
     }
-
-    public static PrivateKey getPrivateKey() {
-        return privateKey;
-    }
-
-    public static void setPrivateKey(PrivateKey privateKey) {
-        Security.privateKey = privateKey;
-    }
-
 
     private String BytestoHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
@@ -62,12 +59,13 @@ public class Security {
         return data;
     }
 
-    public String encrypt(String Message, PublicKey publicKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher encryptCipher = Cipher.getInstance("RSA");
-        encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+    public String encrypt(String Message, String publicKey) {
+//        Cipher encryptCipher = Cipher.getInstance("RSA");
+//        encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
         byte[] secretMessageBytes = Message.getBytes(StandardCharsets.UTF_8);
-        byte[] encryptedMessageBytes = encryptCipher.doFinal(secretMessageBytes);
-        return BytestoHex(encryptedMessageBytes);
+//        byte[] encryptedMessageBytes = encryptCipher.doFinal(secretMessageBytes);
+//        return BytestoHex(encryptedMessageBytes);
+        return "";
     }
 
 

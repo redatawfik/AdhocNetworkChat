@@ -21,16 +21,20 @@ import com.google.android.gms.nearby.connection.PayloadTransferUpdate;
 import com.google.android.gms.nearby.connection.Strategy;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DataLinkManager {
 
-    private static final String NETWORK_NAME = "com.adhoc.mobile.core.datalink";
+    public static final String NETWORK_NAME = "com.adhoc.mobile.core.datalink";
+
     private final String TAG = this.getClass().getName();
     private final Strategy STRATEGY = Strategy.P2P_CLUSTER;
     private final ConnectionsClient connectionsClient;
     private final Context context;
-    private final String myName;
+    private final AdhocDevice myDevice;
     private final DataLinkCallbacks callbacks;
+    private final Map<String, String> neighborDevicesMap = new HashMap<>();
 
     private final PayloadCallback payloadCallback = new PayloadCallback() {
         @Override
@@ -44,7 +48,7 @@ public class DataLinkManager {
                 Log.i(TAG, "Received : " + message);
 
                 // TODO(Inform network layer)
-                callbacks.onPayloadReceived(endpointId, message);
+                callbacks.onPayloadReceived(message);
             }
         }
 
@@ -53,37 +57,57 @@ public class DataLinkManager {
             Toast.makeText(context, "onPayloadTransferUpdate", Toast.LENGTH_SHORT).show();
         }
     };
-    String tempEndpointName = "";
+
     private final ConnectionLifecycleCallback connectionLifecycleCallback = new ConnectionLifecycleCallback() {
+        AdhocDevice adhocDevice = null;
+
         @Override
         public void onConnectionInitiated(@NonNull String endpointId, @NonNull ConnectionInfo connectionInfo) {
             Toast.makeText(context, "onConnectionInitiated", Toast.LENGTH_SHORT).show();
+
             connectionsClient.acceptConnection(endpointId, payloadCallback);
-            tempEndpointName = connectionInfo.getEndpointName();
+            adhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+            Log.i("========================================", connectionInfo.getEndpointName());
         }
 
         @Override
         public void onConnectionResult(@NonNull String endpointId, @NonNull ConnectionResolution result) {
             Toast.makeText(context, "onConnectionResult", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "connection status is " + result.getStatus());
+
             if (result.getStatus().isSuccess()) {
-                callbacks.onConnectionSucceed(endpointId, tempEndpointName);
+                neighborDevicesMap.put(adhocDevice.getId(), endpointId);
+                callbacks.onConnectionSucceed(adhocDevice);
             }
         }
 
         @Override
         public void onDisconnected(@NonNull String endpointId) {
             Toast.makeText(context, "onDisconnected", Toast.LENGTH_SHORT).show();
-            callbacks.onDisconnected(endpointId);
+
+            String id = null;
+            for (Map.Entry<String, String> entry : neighborDevicesMap.entrySet()) {
+                if (entry.getValue().equals(endpointId)) {
+                    id = entry.getKey();
+                    neighborDevicesMap.remove(id);
+                    break;
+                }
+            }
+
+            if (id != null) {
+                callbacks.onDisconnected(id);
+            }
         }
     };
+
     // Callbacks for finding other devices
     private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
         @Override
         public void onEndpointFound(@NonNull String endpointId, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
             Toast.makeText(context, "onEndpointFound", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Found endpoint with id = " + endpointId);
-            connectionsClient.requestConnection(myName, endpointId, connectionLifecycleCallback);
+
+            connectionsClient.requestConnection(myDevice.toJson(), endpointId, connectionLifecycleCallback);
         }
 
         @Override
@@ -94,8 +118,8 @@ public class DataLinkManager {
     };
 
 
-    public DataLinkManager(Context context, String myName, DataLinkCallbacks callbacks) {
-        this.myName = myName;
+    public DataLinkManager(Context context, AdhocDevice device, DataLinkCallbacks callbacks) {
+        this.myDevice = device;
         this.context = context;
         this.callbacks = callbacks;
         this.connectionsClient = Nearby.getConnectionsClient(context);
@@ -108,11 +132,32 @@ public class DataLinkManager {
         startDiscovery();
     }
 
-    public void sendMessage(String message, String id) {
+    public void sendMessage(String message, String address) {
+
+        String privateId = neighborDevicesMap.get(address);
+
+        assert privateId != null;
         connectionsClient.sendPayload(
-                id,
+                privateId,
                 Payload.fromBytes(message.getBytes())
         );
+    }
+
+    public boolean isDirectNeighbors(String address) {
+        return neighborDevicesMap.containsKey(address);
+    }
+
+    public void broadcast(String message) {
+        for (String id : neighborDevicesMap.values()) {
+            sendMessage(message, id);
+        }
+    }
+
+    public void broadcastExcept(String message, String excludedAddress) {
+        for (String id : neighborDevicesMap.values()) {
+            if (id.equals(excludedAddress)) continue;
+            sendMessage(message, id);
+        }
     }
 
     public void leaveNetwork() {
@@ -131,7 +176,7 @@ public class DataLinkManager {
         AdvertisingOptions options = new AdvertisingOptions.Builder().setStrategy(STRATEGY).build();
         // Note: Advertising may fail. To keep this demo simple, we don't handle failures.
         connectionsClient.startAdvertising(
-                myName,
+                myDevice.toJson(),
                 NETWORK_NAME,
                 connectionLifecycleCallback,
                 options

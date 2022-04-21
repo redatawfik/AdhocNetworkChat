@@ -1,10 +1,10 @@
 package com.adhoc.mobile.core.network;
 
-import com.adhoc.mobile.core.application.Endpoint;
+import com.adhoc.mobile.core.datalink.AdhocDevice;
 
 public interface NetworkCallbacks {
 
-    void onConnectionSucceed(Endpoint endpoint);
+    void onConnectionSucceed(AdhocDevice device);
 
     void onDisconnected(String endpoint);
 
