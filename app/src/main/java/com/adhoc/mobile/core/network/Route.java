@@ -1,5 +1,7 @@
 package com.adhoc.mobile.core.network;
 
+import androidx.annotation.NonNull;
+
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,4 +14,17 @@ public class Route {
     private long timeToLive;
     private ArrayList<String> precursors;
     private ConcurrentHashMap<String, Long> activesDataPath;
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "Route{" +
+                " destinationId=" + destinationId +
+                ", nextHop=" + nextHop +
+                ", hopCount=" + hopCount +
+                ", destinationSequenceNumber='" + destinationSequenceNumber + '\'' +
+                ", timeToLive=" + timeToLive +
+                ", timeToLive=" + timeToLive +
+                '}';
+    }
 }

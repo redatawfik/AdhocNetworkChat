@@ -26,9 +26,10 @@ import java.util.Map;
 
 public class DataLinkManager {
 
+    private final String TAG = this.getClass().getName();
+
     public static final String NETWORK_NAME = "com.adhoc.mobile.core.datalink";
 
-    private final String TAG = this.getClass().getName();
     private final Strategy STRATEGY = Strategy.P2P_CLUSTER;
     private final ConnectionsClient connectionsClient;
     private final Context context;
@@ -39,13 +40,13 @@ public class DataLinkManager {
     private final PayloadCallback payloadCallback = new PayloadCallback() {
         @Override
         public void onPayloadReceived(@NonNull String endpointId, @NonNull Payload payload) {
-            Toast.makeText(context, "onPayloadReceived", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "onPayloadReceived", Toast.LENGTH_SHORT).show();
 
             if (payload.getType() == Payload.Type.BYTES) {
                 byte[] receivedBytes = payload.asBytes();
                 String message = new String(receivedBytes, StandardCharsets.UTF_8);
 
-                Log.i(TAG, "Received : " + message);
+                Log.i(TAG, "Received payload : " + message);
 
                 // TODO(Inform network layer)
                 callbacks.onPayloadReceived(message);
@@ -63,17 +64,17 @@ public class DataLinkManager {
 
         @Override
         public void onConnectionInitiated(@NonNull String endpointId, @NonNull ConnectionInfo connectionInfo) {
-            Toast.makeText(context, "onConnectionInitiated", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "onConnectionInitiated", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Connection initiated to device=" + connectionInfo.getEndpointName());
 
             connectionsClient.acceptConnection(endpointId, payloadCallback);
             adhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
-            Log.i("========================================", connectionInfo.getEndpointName());
         }
 
         @Override
         public void onConnectionResult(@NonNull String endpointId, @NonNull ConnectionResolution result) {
-            Toast.makeText(context, "onConnectionResult", Toast.LENGTH_SHORT).show();
-            Log.i(TAG, "connection status is " + result.getStatus());
+//            Toast.makeText(context, "onConnectionResult", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Connection to device with id=" + endpointId + " is " + result.getStatus());
 
             if (result.getStatus().isSuccess()) {
                 neighborDevicesMap.put(adhocDevice.getId(), endpointId);
@@ -83,8 +84,8 @@ public class DataLinkManager {
 
         @Override
         public void onDisconnected(@NonNull String endpointId) {
-            Toast.makeText(context, "onDisconnected", Toast.LENGTH_SHORT).show();
-
+//            Toast.makeText(context, "onDisconnected", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Disconnect from device with id=" + endpointId);
             String id = null;
             for (Map.Entry<String, String> entry : neighborDevicesMap.entrySet()) {
                 if (entry.getValue().equals(endpointId)) {
@@ -104,15 +105,16 @@ public class DataLinkManager {
     private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
         @Override
         public void onEndpointFound(@NonNull String endpointId, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
-            Toast.makeText(context, "onEndpointFound", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "onEndpointFound", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Found endpoint with id = " + endpointId);
-
             connectionsClient.requestConnection(myDevice.toJson(), endpointId, connectionLifecycleCallback);
+            Log.i(TAG, "Requested connection with mydevice=" + myDevice.toJson() +
+                    "to connect to device with id=" + endpointId);
         }
 
         @Override
         public void onEndpointLost(@NonNull String endpointId) {
-            Toast.makeText(context, "onEndpointLost", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "onEndpointLost", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Lost endpoint with id = " + endpointId);
         }
     };
@@ -133,6 +135,7 @@ public class DataLinkManager {
     }
 
     public void sendMessage(String message, String address) {
+        Log.i(TAG, "Send message=" + message + "to address=" + address);
 
         String privateId = neighborDevicesMap.get(address);
 
@@ -148,12 +151,16 @@ public class DataLinkManager {
     }
 
     public void broadcast(String message) {
+        Log.i(TAG, "Broadcast message=" + message + "to all neighbors");
+
         for (String id : neighborDevicesMap.values()) {
             sendMessage(message, id);
         }
     }
 
     public void broadcastExcept(String message, String excludedAddress) {
+        Log.i(TAG, "Broadcast message=" + message + "to all neighbors except " + excludedAddress);
+
         for (String id : neighborDevicesMap.values()) {
             if (id.equals(excludedAddress)) continue;
             sendMessage(message, id);
@@ -161,6 +168,7 @@ public class DataLinkManager {
     }
 
     public void leaveNetwork() {
+        Log.i(TAG, "Leave network");
         stopAdvertising();
         stopDiscovery();
 
@@ -174,15 +182,12 @@ public class DataLinkManager {
         Log.i(TAG, "Started advertising on " + NETWORK_NAME);
 
         AdvertisingOptions options = new AdvertisingOptions.Builder().setStrategy(STRATEGY).build();
-        // Note: Advertising may fail. To keep this demo simple, we don't handle failures.
         connectionsClient.startAdvertising(
                 myDevice.toJson(),
                 NETWORK_NAME,
                 connectionLifecycleCallback,
                 options
         );
-
-        Toast.makeText(context, "startAdvertising", Toast.LENGTH_SHORT).show();
     }
 
     private void startDiscovery() {
@@ -194,8 +199,6 @@ public class DataLinkManager {
                 endpointDiscoveryCallback,
                 options
         );
-
-        Toast.makeText(context, "startDiscovery", Toast.LENGTH_SHORT).show();
     }
 
     private void stopAdvertising() {

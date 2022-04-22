@@ -1,6 +1,7 @@
 package com.adhoc.mobile.core.network;
 
 import android.content.Context;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.adhoc.mobile.core.datalink.AdhocDevice;
@@ -9,6 +10,8 @@ import com.adhoc.mobile.core.datalink.DataLinkManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 public class NetworkManager {
@@ -27,12 +30,14 @@ public class NetworkManager {
     private final DataLinkCallbacks dataLinkCallbacks = new DataLinkCallbacks() {
         @Override
         public void onConnectionSucceed(AdhocDevice adhocDevice) {
+            Log.i(TAG, "Connection succeed to device {}" + adhocDevice);
             adhocDeviceList.add(adhocDevice);
             callbacks.onConnectionSucceed(adhocDevice);
         }
 
         @Override
         public void onDisconnected(String endpointId) {
+            Log.i(TAG, "Disconnect from device with id=" + endpointId);
             adhocDeviceList = adhocDeviceList.stream()
                     .filter(e -> !e.getId().equals(endpointId)).collect(Collectors.toList());
             callbacks.onDisconnected(endpointId);
@@ -40,6 +45,7 @@ public class NetworkManager {
 
         @Override
         public void onPayloadReceived(String message) {
+            Log.i(TAG, "Payload received" + message);
             processReceivedMessage(message);
         }
     };
@@ -100,24 +106,7 @@ public class NetworkManager {
     }
 
     public void sendMessage(String message, AdhocDevice destination) {
-        // TODO(Look in Routing table)
-
-        /**
-         * if(destination is direct neighbor) {
-         *      1. create data object
-         *      2. send data object to datalink
-         * } else if (destination is in routing table) {
-         *      1. Get the next hop from routing table.
-         *      2. form a data object with the next hop as destinaion.
-         *      3. send data to datalink.
-         * } else {
-         *      // if we are here, it means that we don't know the path to the destination.
-         *      // So we have to initiate a RREQ and wait for RREP, then send DATA message.
-         *      1. Build a RREQ and broadcast it to all neighbors.
-         *      2.
-         * }
-         *
-         */
+        Log.i(TAG, "Send message=" + message + " , to Device=" + destination);
 
         String destinationId = destination.getId();
 
@@ -129,14 +118,36 @@ public class NetworkManager {
 
             dataLinkManager.sendMessage(dataMessage.toJsonString(), nextHop);
         } else {
-            // TODO (Broadcast RREQ) rec RREP -> Routing table
             dataLinkManager.broadcast(dataMessage.toJsonString());
+            startTimerRREQ(destinationId, aovdManager.getNextSequenceNumber(), Constants.RREQ_RETRIES,
+                    Constants.NET_TRANVERSAL_TIME);
         }
-
     }
 
 
     public void leaveNetwork() {
         dataLinkManager.leaveNetwork();
+    }
+
+    private void startTimerRREQ(String destinationId, long seqNumber, int retry, int time) {
+
+        Log.i(TAG, "Broadcast RREQ to find a destinationId=" + destinationId);
+
+        RREQ rreqMessage = new RREQ(myDevice.getId(), destinationId, seqNumber,
+                aovdManager.getDestSequenceNumber(destinationId), aovdManager.getNextBroadcastId(), 0);
+
+        dataLinkManager.broadcast(rreqMessage.toJsonString());
+
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Route route = aovdManager.getRouteForDest(destinationId);
+                if (route == null && retry != 0) {
+                    startTimerRREQ(destinationId, seqNumber, retry - 1, time * 2);
+                    Log.i(TAG, "Broadcast retry=" + retry + " , with " + rreqMessage);
+                }
+            }
+        }, time);
     }
 }

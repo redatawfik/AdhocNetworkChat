@@ -1,5 +1,7 @@
 package com.adhoc.mobile.core.network;
 
+import androidx.annotation.NonNull;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -29,5 +31,11 @@ public class AdhocMessage {
         } catch (JsonProcessingException ignored) {
             return null;
         }
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "MessageType=" + type;
     }
 }
