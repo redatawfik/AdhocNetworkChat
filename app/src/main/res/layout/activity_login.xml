@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="Ui.MainActivity">
+    android:background="@color/white"
+    tools:context=".LoginActivity">
 
     <TextView
         android:id="@+id/registerTitle"
@@ -16,58 +17,61 @@
         android:layout_marginBottom="25dp"
         android:gravity="center"
         android:text="Register"
-        android:textColor="@color/black"
+        android:textColor="@color/ternary_color"
         android:textSize="35dp"
         android:textStyle="bold" />
 
     <EditText
         android:id="@+id/name"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:layout_below="@+id/registerTitle"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="40dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/custom_edit_text"
+        android:drawableStart="@drawable/ic_user"
+        android:drawablePadding="5dp"
         android:hint="Name"
+        android:paddingHorizontal="10dp"
         android:textColor="@color/black"
-        android:textColorHint="@color/black"
-        android:layout_margin="10dp"
-        android:paddingHorizontal="20dp"/>
+        android:textColorHint="@color/darkGrey" />
 
     <EditText
         android:id="@+id/phoneNumber"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:layout_below="@+id/name"
-        android:layout_marginStart="10dp"
+        android:layout_marginStart="40dp"
         android:layout_marginTop="10dp"
-        android:layout_marginEnd="10dp"
+        android:layout_marginEnd="40dp"
         android:layout_marginBottom="10dp"
+        android:background="@drawable/custom_edit_text"
+        android:drawableStart="@drawable/ic_phone"
+        android:drawablePadding="5dp"
         android:hint="Phone Number"
-        android:paddingHorizontal="20dp"
+        android:paddingHorizontal="10dp"
         android:textColor="@color/black"
-        android:textColorHint="@color/black" />
+        android:textColorHint="@color/darkGrey" />
 
-    <EditText
-        android:id="@+id/password"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/phoneNumber"
-        android:hint="Password"
-        android:textColor="@color/black"
-        android:textColorHint="@color/black"
-        android:layout_margin="10dp"
-        android:paddingHorizontal="20dp"
-        android:inputType="textPassword"/>
 
-    <com.google.android.material.button.MaterialButton
+    <Button
         android:id="@+id/registerButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/password"
+        android:layout_below="@id/phoneNumber"
         android:layout_centerHorizontal="true"
-        android:layout_marginStart="20dp"
         android:layout_marginTop="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="20dp"
+        android:background="@drawable/custom_button"
+        android:paddingHorizontal="50dp"
         android:text="Register"
-        android:textSize="25dp" />
+        android:textSize="18dp" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/login"
+        android:layout_below="@id/registerButton"/>
 
 </RelativeLayout>

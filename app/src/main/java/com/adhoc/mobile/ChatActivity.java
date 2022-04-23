@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -13,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.adhoc.mobile.core.application.AdhocManager;
 import com.adhoc.mobile.core.application.AdhocManagerCallbacks;
 import com.adhoc.mobile.core.application.Endpoint;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +26,7 @@ public class ChatActivity extends AppCompatActivity {
     private String myName;
     private ImageButton sendButton;
     private EditText textMessage;
+    private TextView nameText;
     private RecyclerView messageRecyclerView;
     private MessagesAdapter messagesAdapter;
     private List<Message> messages;
@@ -69,6 +73,8 @@ public class ChatActivity extends AppCompatActivity {
         messagesAdapter = new MessagesAdapter(messages);
         messageRecyclerView.setAdapter(messagesAdapter);
 
+        nameText = (TextView) findViewById(R.id.nameText);
+        nameText.setText(name);
         sendButton = (ImageButton) findViewById(R.id.sendButton);
         textMessage = (EditText) findViewById(R.id.textMessage);
 

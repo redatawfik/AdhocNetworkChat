@@ -4,17 +4,44 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/purple_700"
+    android:background="@color/darkGrey"
     tools:context=".ChatActivity">
+
+    <View
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="75dp"
+        android:background="@drawable/top_bar_chat"
+        app:layout_constraintTop_toTopOf="parent"
+        android:elevation="5dp"/>
+
+    <TextView
+        android:id="@+id/nameText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:elevation="5dp"
+        android:gravity="center"
+        android:text="Name"
+        android:textSize="36sp"
+        android:textColor="@color/primary_color"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginStart="25dp"
+        app:layout_constraintLeft_toLeftOf="@+id/topBar"
+        />
+
 
     <View
         android:id="@+id/viewBackground"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="10dp"
         android:layout_marginBottom="16dp"
+        android:layout_marginHorizontal="16dp"
         android:background="@drawable/chat_view_background"
         app:layout_constraintBottom_toTopOf="@id/sendIc"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        android:elevation="10dp"
         />
 
     <androidx.recyclerview.widget.RecyclerView
@@ -25,34 +52,37 @@
         android:orientation="vertical"
         android:overScrollMode="never"
         android:paddingTop="20dp"
+        android:layout_marginVertical="10dp"
+        android:layout_marginHorizontal="15dp"
         app:layout_constraintBottom_toBottomOf="@+id/viewBackground"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@id/viewBackground"
+        android:elevation="12dp"/>
 
 
-   <FrameLayout
-       android:layout_width="40dp"
-       android:layout_height="40dp"
-       android:id="@+id/sendIc"
-       android:layout_marginEnd="16dp"
-       android:layout_marginRight="16dp"
-       android:layout_marginBottom="12dp"
-       android:background="@drawable/chat_items_background"
-       app:layout_constraintBottom_toBottomOf="parent"
-       app:layout_constraintEnd_toEndOf="parent">
+    <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:id="@+id/sendIc"
+        android:layout_marginEnd="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/chat_items_background"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-       <ImageButton
-           android:id="@+id/sendButton"
-           android:layout_width="wrap_content"
-           android:layout_height="wrap_content"
-           android:layout_gravity="center"
-           android:padding="20dp"
-           android:layout_marginHorizontal="10dp"
-           android:background="@drawable/ic_send"
-           />
+        <ImageButton
+            android:id="@+id/sendButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="20dp"
+            android:layout_marginHorizontal="10dp"
+            android:background="@drawable/ic_send"
+            />
 
 
 
-   </FrameLayout>
+    </FrameLayout>
 
 
     <EditText
@@ -72,7 +102,7 @@
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:textColor="@color/white"
-        android:textColorHint="#595959"
+        android:textColorHint="@color/darkGrey"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/sendIc"
         app:layout_constraintStart_toStartOf="parent"/>

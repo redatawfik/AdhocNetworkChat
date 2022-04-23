@@ -3,6 +3,7 @@ package com.adhoc.mobile;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,7 +13,7 @@ import com.google.android.material.button.MaterialButton;
 public class LoginActivity extends AppCompatActivity {
     EditText nameEditText;
     EditText phoneNumberEditText;
-    MaterialButton registerButton;
+    Button registerButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,7 +23,7 @@ public class LoginActivity extends AppCompatActivity {
         nameEditText = findViewById(R.id.name);
         phoneNumberEditText = (EditText) findViewById(R.id.phoneNumber);
 
-        registerButton = (MaterialButton) findViewById(R.id.registerButton);
+        registerButton = (Button) findViewById(R.id.registerButton);
 
         registerButton.setOnClickListener(new View.OnClickListener() {
             @Override
