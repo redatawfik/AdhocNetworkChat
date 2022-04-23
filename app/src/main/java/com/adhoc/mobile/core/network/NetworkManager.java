@@ -2,14 +2,16 @@ package com.adhoc.mobile.core.network;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
-import com.adhoc.mobile.core.application.Endpoint;
+import com.adhoc.mobile.core.datalink.AdhocDevice;
 import com.adhoc.mobile.core.datalink.DataLinkCallbacks;
 import com.adhoc.mobile.core.datalink.DataLinkManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 public class NetworkManager {
@@ -17,59 +19,135 @@ public class NetworkManager {
     private final String TAG = this.getClass().getName();
 
     private final DataLinkManager dataLinkManager;
-    private final String myId;
-    private final Context context;
     private final NetworkCallbacks callbacks;
-    private final String myName;
+    private final AdhocDevice myDevice;
+    private final AovdManager aovdManager;
+    private final Context context;
 
 
-    private List<Endpoint> endpointList = new ArrayList<>();
+    private List<AdhocDevice> adhocDeviceList = new ArrayList<>();
 
     private final DataLinkCallbacks dataLinkCallbacks = new DataLinkCallbacks() {
         @Override
-        public void onConnectionSucceed(String endpointId, String endpointName) {
-            Endpoint endpoint = new Endpoint(endpointId, endpointName);
-            endpointList.add(endpoint);
-            callbacks.onConnectionSucceed(endpoint);
+        public void onConnectionSucceed(AdhocDevice adhocDevice) {
+            Log.i(TAG, "Connection succeed to device {}" + adhocDevice);
+            adhocDeviceList.add(adhocDevice);
+            callbacks.onConnectionSucceed(adhocDevice);
         }
 
         @Override
         public void onDisconnected(String endpointId) {
-            endpointList = endpointList.stream()
+            Log.i(TAG, "Disconnect from device with id=" + endpointId);
+            adhocDeviceList = adhocDeviceList.stream()
                     .filter(e -> !e.getId().equals(endpointId)).collect(Collectors.toList());
             callbacks.onDisconnected(endpointId);
         }
 
         @Override
-        public void onPayloadReceived(String endpointId, String message) {
-            Log.i(TAG,"Received : " +  endpointId + message);
-            callbacks.onPayloadReceived(endpointId, message);
+        public void onPayloadReceived(String message) {
+            Log.i(TAG, "Payload received" + message);
+            processReceivedMessage(message);
         }
     };
 
-    public NetworkManager(Context context, String myName, NetworkCallbacks callbacks) {
+    public NetworkManager(Context context, AdhocDevice device, NetworkCallbacks callbacks) {
         this.context = context;
         this.callbacks = callbacks;
-        this.myId = getUUID();
-        this.myName = myName;
-        dataLinkManager = new DataLinkManager(context, myName, dataLinkCallbacks);
+        this.myDevice = device;
+        this.aovdManager = new AovdManager();
+        dataLinkManager = new DataLinkManager(context, device, dataLinkCallbacks);
+    }
+
+    private void processReceivedMessage(String message) {
+
+        AdhocMessage adhocMessage = Utils.getObjectFromJson(message);
+
+        switch (adhocMessage.getType()) {
+            case DATA:
+                processData((DataMessage) adhocMessage);
+                break;
+            case RREQ:
+                processRREQ((RREQ) adhocMessage);
+                break;
+            case RREP:
+                processRREP((RREP) adhocMessage);
+                break;
+            case RERR:
+                processRERR((RERR) adhocMessage);
+                break;
+        }
+    }
+
+    private void processData(DataMessage dataMessage) {
+        Toast.makeText(context, "Received: " + dataMessage.getPayload(), Toast.LENGTH_SHORT).show();
+    }
+
+    private void processRREQ(RREQ rreq) {
+        /*
+        if(myId  = rreq.getDestiaionId){
+            call applicationLayer
+        } else (Routing table contins rreq.getdesId){
+            Build RREP(
+            Send rrep -> node received rreq
+        } else {
+        broadcase rreq
+         */
+    }
+
+    private void processRREP(RREP rrep) {
+    }
+
+    private void processRERR(RERR rerr) {
+
     }
 
     public void joinNetwork() {
         dataLinkManager.joinNetwork();
     }
 
-    public void sendMessage(String message, String destinationId) {
-        // TODO(Look in Routing table)
-        dataLinkManager.sendMessage(message, destinationId);
+    public void sendMessage(String message, AdhocDevice destination) {
+        Log.i(TAG, "Send message=" + message + " , to Device=" + destination);
+
+        String destinationId = destination.getId();
+
+        DataMessage dataMessage = new DataMessage(destination.getId(), message);
+        if (dataLinkManager.isDirectNeighbors(destination.getId())) {
+            dataLinkManager.sendMessage(dataMessage.toJsonString(), destination.getId());
+        } else if (aovdManager.knowNextHop(destinationId)) {
+            String nextHop = aovdManager.getNextHop(destinationId);
+
+            dataLinkManager.sendMessage(dataMessage.toJsonString(), nextHop);
+        } else {
+            dataLinkManager.broadcast(dataMessage.toJsonString());
+            startTimerRREQ(destinationId, aovdManager.getNextSequenceNumber(), Constants.RREQ_RETRIES,
+                    Constants.NET_TRANVERSAL_TIME);
+        }
     }
+
 
     public void leaveNetwork() {
-        // TODO
+        dataLinkManager.leaveNetwork();
     }
 
-    private String getUUID() {
-        UUID uuid = UUID.randomUUID();
-        return uuid.toString();
+    private void startTimerRREQ(String destinationId, long seqNumber, int retry, int time) {
+
+        Log.i(TAG, "Broadcast RREQ to find a destinationId=" + destinationId);
+
+        RREQ rreqMessage = new RREQ(myDevice.getId(), destinationId, seqNumber,
+                aovdManager.getDestSequenceNumber(destinationId), aovdManager.getNextBroadcastId(), 0);
+
+        dataLinkManager.broadcast(rreqMessage.toJsonString());
+
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Route route = aovdManager.getRouteForDest(destinationId);
+                if (route == null && retry != 0) {
+                    startTimerRREQ(destinationId, seqNumber, retry - 1, time * 2);
+                    Log.i(TAG, "Broadcast retry=" + retry + " , with " + rreqMessage);
+                }
+            }
+        }, time);
     }
 }

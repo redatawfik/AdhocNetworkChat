@@ -59,7 +59,6 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         public TextView nameTextView;
         public Button messageButton;
         public int position;
-        private final Context context;
 
         public ContactsHolder(Context context, View itemView) {
 

@@ -20,7 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.adhoc.mobile.core.application.AdhocManager;
 import com.adhoc.mobile.core.application.AdhocManagerCallbacks;
-import com.adhoc.mobile.core.application.Endpoint;
+import com.adhoc.mobile.core.datalink.AdhocDevice;
 
 import org.w3c.dom.Text;
 
@@ -77,8 +77,8 @@ public class MainActivity extends AppCompatActivity
     private ContactsAdapter contactAdapter;
     AdhocManagerCallbacks callbacks = new AdhocManagerCallbacks() {
         @Override
-        public void onConnectionSucceed(Endpoint endpoint) {
-            contactList.add(new Contact(endpoint.getId(), endpoint.getName()));
+        public void onConnectionSucceed(AdhocDevice device) {
+            contactList.add(new Contact(device.getId(), device.getName()));
             contactAdapter.notifyDataSetChanged();
             contactsRecyclerView.setAdapter(contactAdapter);
             Toast.makeText(MainActivity.this, "added to recycler view", Toast.LENGTH_SHORT).show();
