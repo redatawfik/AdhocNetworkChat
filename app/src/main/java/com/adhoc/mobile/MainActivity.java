@@ -7,6 +7,9 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -18,6 +21,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.adhoc.mobile.core.application.AdhocManager;
 import com.adhoc.mobile.core.application.AdhocManagerCallbacks;
 import com.adhoc.mobile.core.datalink.AdhocDevice;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +65,10 @@ public class MainActivity extends AppCompatActivity
                     };
         }
     }
-
+    private String name;
+    private Button joinButton;
+    private TextView profileName;
+    private boolean joined = false;
     private final String TAG = this.getClass().getName();
     private final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
     private AdhocManager adhocManager;
@@ -73,9 +81,7 @@ public class MainActivity extends AppCompatActivity
             contactList.add(new Contact(device.getId(), device.getName()));
             contactAdapter.notifyDataSetChanged();
             contactsRecyclerView.setAdapter(contactAdapter);
-            Toast.makeText(MainActivity.this, "added to rececler view", Toast.LENGTH_SHORT).show();
-
-            adhocManager.sendMessage("Heloo", device);
+            Toast.makeText(MainActivity.this, "added to recycler view", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -85,7 +91,7 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         public void onPayloadReceived(String endpointId, String message) {
-
+            System.out.println("Main "+"Received : " +  endpointId + message);
         }
     };
 
@@ -107,21 +113,36 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String name = getIntent().getStringExtra("EXTRA_NAME");
-
+        name = getIntent().getStringExtra("EXTRA_NAME");
+        joinButton = (Button) findViewById(R.id.joinButton);
         contactList = new ArrayList<>();
-
+        profileName = (TextView) findViewById(R.id.profileName);
+        profileName.setText(name);
         adhocManager = new AdhocManager(this, name, callbacks);
 
         contactsRecyclerView = (RecyclerView) findViewById(R.id.rvContacts);
         contactAdapter = new ContactsAdapter(contactList, this);
         contactsRecyclerView.setAdapter(contactAdapter);
         contactsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        contactList.add(new  Contact("0","seif"));
+        contactList.add(new  Contact("1","ahmed"));
 
         // TODO
-        adhocManager.joinNetwork();
-//        adhocManager.leaveNetwork();
-//        adhocManager.sendMessage("message", "id");
+        joinButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                joined = !joined;
+                if(joined){
+                    adhocManager.joinNetwork();
+                    contactsRecyclerView.setVisibility(View.VISIBLE);
+                    joinButton.setText("Leave Network");
+                }else{
+//                    adhocManager.leaveNetwork();
+                    contactsRecyclerView.setVisibility(View.GONE);
+                    joinButton.setText("Join Network");
+                }
+            }
+        });
     }
 
     @Override
@@ -161,6 +182,7 @@ public class MainActivity extends AppCompatActivity
         Intent intent = new Intent(this, ChatActivity.class);
         intent.putExtra("EXTRA_ID", contact.getId());
         intent.putExtra("EXTRA_NAME", contact.getName());
+        intent.putExtra("EXTRA_USER_NAME", name);
         startActivity(intent);
     }
 }

@@ -5,22 +5,22 @@
     android:layout_height="wrap_content"
     android:paddingTop="10dp"
     android:paddingBottom="10dp"
-    android:layout_marginHorizontal="10dp"
-    >
+    android:paddingHorizontal="23dp">
 
     <TextView
         android:id="@+id/contact_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:textColor="@color/primary_color"
         />
 
     <Button
         android:id="@+id/message_button"
+        android:background="@drawable/custom_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
+        android:paddingHorizontal="16dp"
         android:textSize="10sp"
         />
 </LinearLayout>

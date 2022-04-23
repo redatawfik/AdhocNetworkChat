@@ -1,6 +1,7 @@
 package com.adhoc.mobile.core.application;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.adhoc.mobile.core.datalink.AdhocDevice;
 import com.adhoc.mobile.core.network.NetworkCallbacks;
@@ -30,7 +31,7 @@ public class AdhocManager {
 
         @Override
         public void onPayloadReceived(String endpointId, String message) {
-            // TODO (Decrypt the message here)
+            Log.i(TAG,"Received : " +  endpointId + message);
             callbacks.onPayloadReceived(endpointId, message);
         }
     };
