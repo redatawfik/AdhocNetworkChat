@@ -8,6 +8,5 @@ public interface AdhocManagerCallbacks {
 
     void onDisconnected(String endpointId);
 
-    void onPayloadReceived(String endpointId, String message);
-
+    void notifyMessageReceivedFrom(String sourceId);
 }

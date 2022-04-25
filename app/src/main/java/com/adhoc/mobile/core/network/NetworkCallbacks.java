@@ -8,6 +8,6 @@ public interface NetworkCallbacks {
 
     void onDisconnected(String endpoint);
 
-    void onPayloadReceived(String endpointId, String message);
+    void onPayloadReceived(String sourceId, String destinationId, String message);
 
 }

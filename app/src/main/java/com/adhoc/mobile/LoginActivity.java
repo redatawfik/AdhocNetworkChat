@@ -8,8 +8,6 @@ import android.widget.EditText;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.button.MaterialButton;
-
 public class LoginActivity extends AppCompatActivity {
     EditText nameEditText;
     EditText phoneNumberEditText;

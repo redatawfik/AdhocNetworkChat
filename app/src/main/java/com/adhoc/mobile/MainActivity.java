@@ -22,8 +22,6 @@ import com.adhoc.mobile.core.application.AdhocManager;
 import com.adhoc.mobile.core.application.AdhocManagerCallbacks;
 import com.adhoc.mobile.core.datalink.AdhocDevice;
 
-import org.w3c.dom.Text;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,82 +63,75 @@ public class MainActivity extends AppCompatActivity
                     };
         }
     }
+
+    private final String TAG = this.getClass().getName();
+    private final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
     private String name;
     private Button joinButton;
     private TextView profileName;
     private boolean joined = false;
-    private final String TAG = this.getClass().getName();
-    private final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
     private AdhocManager adhocManager;
     private List<Contact> contactList;
     private RecyclerView contactsRecyclerView;
     private ContactsAdapter contactAdapter;
+
     AdhocManagerCallbacks callbacks = new AdhocManagerCallbacks() {
         @Override
         public void onConnectionSucceed(AdhocDevice device) {
             contactList.add(new Contact(device.getId(), device.getName()));
             contactAdapter.notifyDataSetChanged();
             contactsRecyclerView.setAdapter(contactAdapter);
+
             Toast.makeText(MainActivity.this, "added to recycler view", Toast.LENGTH_SHORT).show();
         }
 
         @Override
         public void onDisconnected(String endpointId) {
+//            contactList.remove()
 
         }
 
         @Override
-        public void onPayloadReceived(String endpointId, String message) {
-            System.out.println("Main "+"Received : " +  endpointId + message);
+        public void notifyMessageReceivedFrom(String sourceId) {
+
         }
     };
 
-    /**
-     * Returns true if the app was granted all the permissions. Otherwise, returns false.
-     */
-    private static boolean hasPermissions(Context context, String... permissions) {
-        for (String permission : permissions) {
-            if (ContextCompat.checkSelfPermission(context, permission)
-                    != PackageManager.PERMISSION_GRANTED) {
-                return false;
-            }
-        }
-        return true;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.i(TAG, "Create new instance of MainActivity");
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        name = getIntent().getStringExtra("EXTRA_NAME");
-        joinButton = (Button) findViewById(R.id.joinButton);
         contactList = new ArrayList<>();
-        profileName = (TextView) findViewById(R.id.profileName);
-        profileName.setText(name);
-        adhocManager = new AdhocManager(this, name, callbacks);
 
-        contactsRecyclerView = (RecyclerView) findViewById(R.id.rvContacts);
+        name = getIntent().getStringExtra("EXTRA_NAME");
+        adhocManager = AdhocManager.getInstance(this, name, callbacks);
+
+        joinButton = findViewById(R.id.joinButton);
+        profileName = findViewById(R.id.profileName);
+        profileName.setText(name);
+
+        contactsRecyclerView = findViewById(R.id.rvContacts);
         contactAdapter = new ContactsAdapter(contactList, this);
         contactsRecyclerView.setAdapter(contactAdapter);
         contactsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        contactList.add(new  Contact("0","seif"));
-        contactList.add(new  Contact("1","ahmed"));
 
-        // TODO
-        joinButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                joined = !joined;
-                if(joined){
-                    adhocManager.joinNetwork();
-                    contactsRecyclerView.setVisibility(View.VISIBLE);
-                    joinButton.setText("Leave Network");
-                }else{
-//                    adhocManager.leaveNetwork();
-                    contactsRecyclerView.setVisibility(View.GONE);
-                    joinButton.setText("Join Network");
-                }
+        contactList.add(new Contact("0", "seif"));
+        contactList.add(new Contact("1", "ahmed"));
+
+        joinButton.setOnClickListener(view -> {
+            joined = !joined;
+            if (joined) {
+                adhocManager.joinNetwork();
+                contactsRecyclerView.setVisibility(View.VISIBLE);
+                joinButton.setText("Leave Network");
+            } else {
+                adhocManager.leaveNetwork();
+                contactsRecyclerView.setVisibility(View.GONE);
+                joinButton.setText("Join Network");
             }
         });
     }
@@ -148,10 +139,19 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStart() {
         super.onStart();
-
         if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
             requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_REQUIRED_PERMISSIONS);
         }
+    }
+
+    @Override
+    public void onClick(int position) {
+        Contact contact = contactList.get(position);
+        Intent intent = new Intent(this, ChatActivity.class);
+        intent.putExtra("EXTRA_ID", contact.getId());
+        intent.putExtra("EXTRA_NAME", contact.getName());
+        intent.putExtra("EXTRA_USER_NAME", name);
+        startActivity(intent);
     }
 
     @Override
@@ -176,13 +176,16 @@ public class MainActivity extends AppCompatActivity
         recreate();
     }
 
-    @Override
-    public void onClick(int position) {
-        Contact contact = contactList.get(position);
-        Intent intent = new Intent(this, ChatActivity.class);
-        intent.putExtra("EXTRA_ID", contact.getId());
-        intent.putExtra("EXTRA_NAME", contact.getName());
-        intent.putExtra("EXTRA_USER_NAME", name);
-        startActivity(intent);
+    /**
+     * Returns true if the app was granted all the permissions. Otherwise, returns false.
+     */
+    private static boolean hasPermissions(Context context, String... permissions) {
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(context, permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
     }
 }

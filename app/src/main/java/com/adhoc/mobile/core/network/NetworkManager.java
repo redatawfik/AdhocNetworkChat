@@ -2,7 +2,6 @@ package com.adhoc.mobile.core.network;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.adhoc.mobile.core.datalink.AdhocDevice;
 import com.adhoc.mobile.core.datalink.DataLinkCallbacks;
@@ -79,7 +78,13 @@ public class NetworkManager {
     }
 
     private void processData(DataMessage dataMessage) {
-        Toast.makeText(context, "Received: " + dataMessage.getPayload(), Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "Received: " + dataMessage.getPayload() + " , for id=" + dataMessage.getDestinationId());
+        if (dataMessage.getDestinationId().equals(myDevice.getId())) {
+            Log.i(TAG, "Received message is for this device");
+            callbacks.onPayloadReceived(dataMessage.getOriginId(), dataMessage.getDestinationId(), (String) dataMessage.getPayload());
+        } else {
+            Log.i(TAG, "Received message not for this device");
+        }
     }
 
     private void processRREQ(RREQ rreq) {
@@ -110,7 +115,7 @@ public class NetworkManager {
 
         String destinationId = destination.getId();
 
-        DataMessage dataMessage = new DataMessage(destination.getId(), message);
+        DataMessage dataMessage = new DataMessage(destination.getId(), myDevice.getId(), message);
         if (dataLinkManager.isDirectNeighbors(destination.getId())) {
             dataLinkManager.sendMessage(dataMessage.toJsonString(), destination.getId());
         } else if (aovdManager.knowNextHop(destinationId)) {

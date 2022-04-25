@@ -15,8 +15,8 @@ import javax.crypto.NoSuchPaddingException;
 
 public class Security {
 
-    private PublicKey publicKey;
     private final PrivateKey privateKey;
+    private PublicKey publicKey;
 
     public Security() {
         //generate Keys

@@ -3,24 +3,32 @@ package com.adhoc.mobile.core.application;
 import android.content.Context;
 import android.util.Log;
 
+import com.adhoc.mobile.Message;
 import com.adhoc.mobile.core.datalink.AdhocDevice;
 import com.adhoc.mobile.core.network.NetworkCallbacks;
 import com.adhoc.mobile.core.network.NetworkManager;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class AdhocManager {
 
     private final String TAG = this.getClass().getName();
 
+    private static AdhocManager instance;
+
     private final AdhocManagerCallbacks callbacks;
     private final NetworkManager networkManager;
     private final Security security;
+    private final MessageServer messageServer;
+    private final Map<String, AdhocDevice> adhocDeviceMap;
 
     private final NetworkCallbacks networkCallbacks = new NetworkCallbacks() {
 
         @Override
         public void onConnectionSucceed(AdhocDevice device) {
+            adhocDeviceMap.put(device.getId(), device);
             callbacks.onConnectionSucceed(device);
         }
 
@@ -30,20 +38,36 @@ public class AdhocManager {
         }
 
         @Override
-        public void onPayloadReceived(String endpointId, String message) {
-            Log.i(TAG,"Received : " +  endpointId + message);
-            callbacks.onPayloadReceived(endpointId, message);
+        public void onPayloadReceived(String sourceId, String destinationId, String message) {
+            Log.i(TAG, "Received : " + sourceId + message);
+
+            messageServer.addMessageForId(message, sourceId, Message.MESSAGE_RECEIVED_TYPE);
         }
     };
 
+    public static AdhocManager getInstance(Context context, String name, AdhocManagerCallbacks callbacks) {
+        if (instance == null) {
+            instance = new AdhocManager(context, name, callbacks);
+        }
+        return instance;
+    }
 
-    public AdhocManager(Context context, String name, AdhocManagerCallbacks callbacks) {
+    public static AdhocManager getInstance() {
+        assert instance != null;
+        return instance;
+    }
+
+    private AdhocManager(Context context, String name, AdhocManagerCallbacks callbacks) {
         this.callbacks = callbacks;
         this.security = new Security();
+        this.messageServer = MessageServer.getInstance();
+        this.adhocDeviceMap = new HashMap<>();
 
         AdhocDevice myDevice = createMyAdhocDevice(name);
 
         networkManager = new NetworkManager(context, myDevice, networkCallbacks);
+
+        Log.i(TAG, "A new instance of AdhocManager is created");
     }
 
     private AdhocDevice createMyAdhocDevice(String name) {
@@ -61,13 +85,14 @@ public class AdhocManager {
         networkManager.leaveNetwork();
     }
 
-    public void sendMessage(String message, AdhocDevice destination) {
+    public void sendMessage(String message, String destinationId) {
 
+        AdhocDevice adhocDevice = adhocDeviceMap.get(destinationId);
         // 1.TODO we will need to extract public key from destination
 
-        String encryptedMessage = security.encrypt(message, destination.getEncryptionKey());
+        String encryptedMessage = security.encrypt(message, adhocDevice.getEncryptionKey());
 
-        networkManager.sendMessage(message, destination);
+        networkManager.sendMessage(message, adhocDevice);
     }
 
     private String getUUID() {

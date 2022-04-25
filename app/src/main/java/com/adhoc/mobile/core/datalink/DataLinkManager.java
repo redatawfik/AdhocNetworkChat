@@ -26,10 +26,8 @@ import java.util.Map;
 
 public class DataLinkManager {
 
-    private final String TAG = this.getClass().getName();
-
     public static final String NETWORK_NAME = "com.adhoc.mobile.core.datalink";
-
+    private final String TAG = this.getClass().getName();
     private final Strategy STRATEGY = Strategy.P2P_CLUSTER;
     private final ConnectionsClient connectionsClient;
     private final Context context;

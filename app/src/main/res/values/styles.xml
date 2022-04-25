@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
+
     <style name="roundedImageViewRounded">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
     <style name="MyTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
