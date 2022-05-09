@@ -6,6 +6,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.adhoc.mobile.core.network.AdhocMessage;
 import com.google.android.gms.nearby.Nearby;
 import com.google.android.gms.nearby.connection.AdvertisingOptions;
 import com.google.android.gms.nearby.connection.ConnectionInfo;
@@ -38,22 +39,18 @@ public class DataLinkManager {
     private final PayloadCallback payloadCallback = new PayloadCallback() {
         @Override
         public void onPayloadReceived(@NonNull String endpointId, @NonNull Payload payload) {
-//            Toast.makeText(context, "onPayloadReceived", Toast.LENGTH_SHORT).show();
-
             if (payload.getType() == Payload.Type.BYTES) {
                 byte[] receivedBytes = payload.asBytes();
                 String message = new String(receivedBytes, StandardCharsets.UTF_8);
 
                 Log.i(TAG, "Received payload : " + message);
 
-                // TODO(Inform network layer)
                 callbacks.onPayloadReceived(message);
             }
         }
 
         @Override
         public void onPayloadTransferUpdate(@NonNull String s, @NonNull PayloadTransferUpdate payloadTransferUpdate) {
-            Toast.makeText(context, "onPayloadTransferUpdate", Toast.LENGTH_SHORT).show();
         }
     };
 
@@ -62,7 +59,6 @@ public class DataLinkManager {
 
         @Override
         public void onConnectionInitiated(@NonNull String endpointId, @NonNull ConnectionInfo connectionInfo) {
-//            Toast.makeText(context, "onConnectionInitiated", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Connection initiated to device=" + connectionInfo.getEndpointName());
 
             connectionsClient.acceptConnection(endpointId, payloadCallback);
@@ -71,7 +67,6 @@ public class DataLinkManager {
 
         @Override
         public void onConnectionResult(@NonNull String endpointId, @NonNull ConnectionResolution result) {
-//            Toast.makeText(context, "onConnectionResult", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Connection to device with id=" + endpointId + " is " + result.getStatus());
 
             if (result.getStatus().isSuccess()) {
@@ -82,7 +77,6 @@ public class DataLinkManager {
 
         @Override
         public void onDisconnected(@NonNull String endpointId) {
-//            Toast.makeText(context, "onDisconnected", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Disconnect from device with id=" + endpointId);
             String id = null;
             for (Map.Entry<String, String> entry : neighborDevicesMap.entrySet()) {
@@ -103,7 +97,6 @@ public class DataLinkManager {
     private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
         @Override
         public void onEndpointFound(@NonNull String endpointId, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
-//            Toast.makeText(context, "onEndpointFound", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Found endpoint with id = " + endpointId);
             connectionsClient.requestConnection(myDevice.toJson(), endpointId, connectionLifecycleCallback);
             Log.i(TAG, "Requested connection with mydevice=" + myDevice.toJson() +
@@ -112,7 +105,6 @@ public class DataLinkManager {
 
         @Override
         public void onEndpointLost(@NonNull String endpointId) {
-//            Toast.makeText(context, "onEndpointLost", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Lost endpoint with id = " + endpointId);
         }
     };
@@ -132,15 +124,17 @@ public class DataLinkManager {
         startDiscovery();
     }
 
-    public void sendMessage(String message, String address) {
+    public void sendMessage(AdhocMessage message, String address) {
         Log.i(TAG, "Send message=" + message + "to address=" + address);
 
         String privateId = neighborDevicesMap.get(address);
 
         assert privateId != null;
+
+        message.setGatewayId(privateId);
         connectionsClient.sendPayload(
                 privateId,
-                Payload.fromBytes(message.getBytes())
+                Payload.fromBytes(message.toJsonString().getBytes())
         );
     }
 
@@ -148,15 +142,15 @@ public class DataLinkManager {
         return neighborDevicesMap.containsKey(address);
     }
 
-    public void broadcast(String message) {
+    public void broadcast(AdhocMessage message) {
         Log.i(TAG, "Broadcast message=" + message + "to all neighbors");
 
-        for (String id : neighborDevicesMap.values()) {
+        for (String id : neighborDevicesMap.keySet()) {
             sendMessage(message, id);
         }
     }
 
-    public void broadcastExcept(String message, String excludedAddress) {
+    public void broadcastExcept(AdhocMessage message, String excludedAddress) {
         Log.i(TAG, "Broadcast message=" + message + "to all neighbors except " + excludedAddress);
 
         for (String id : neighborDevicesMap.values()) {

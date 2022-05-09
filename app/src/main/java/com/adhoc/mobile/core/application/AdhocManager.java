@@ -1,5 +1,7 @@
 package com.adhoc.mobile.core.application;
 
+import static com.adhoc.mobile.MainActivity.tempId;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -14,10 +16,8 @@ import java.util.UUID;
 
 public class AdhocManager {
 
-    private final String TAG = this.getClass().getName();
-
     private static AdhocManager instance;
-
+    private final String TAG = this.getClass().getName();
     private final AdhocManagerCallbacks callbacks;
     private final NetworkManager networkManager;
     private final Security security;
@@ -45,6 +45,20 @@ public class AdhocManager {
         }
     };
 
+    private AdhocManager(Context context, String name, AdhocManagerCallbacks callbacks) {
+        this.callbacks = callbacks;
+        this.security = new Security();
+        this.messageServer = MessageServer.getInstance();
+        this.adhocDeviceMap = new HashMap<>();
+        adhocDeviceMap.put(tempId, new AdhocDevice("Reda", tempId, "encryption-key"));
+
+        AdhocDevice myDevice = createMyAdhocDevice(name);
+
+        networkManager = new NetworkManager(context, myDevice, networkCallbacks);
+
+        Log.i(TAG, "A new instance of AdhocManager is created");
+    }
+
     public static AdhocManager getInstance(Context context, String name, AdhocManagerCallbacks callbacks) {
         if (instance == null) {
             instance = new AdhocManager(context, name, callbacks);
@@ -55,19 +69,6 @@ public class AdhocManager {
     public static AdhocManager getInstance() {
         assert instance != null;
         return instance;
-    }
-
-    private AdhocManager(Context context, String name, AdhocManagerCallbacks callbacks) {
-        this.callbacks = callbacks;
-        this.security = new Security();
-        this.messageServer = MessageServer.getInstance();
-        this.adhocDeviceMap = new HashMap<>();
-
-        AdhocDevice myDevice = createMyAdhocDevice(name);
-
-        networkManager = new NetworkManager(context, myDevice, networkCallbacks);
-
-        Log.i(TAG, "A new instance of AdhocManager is created");
     }
 
     private AdhocDevice createMyAdhocDevice(String name) {
@@ -83,6 +84,7 @@ public class AdhocManager {
 
     public void leaveNetwork() {
         networkManager.leaveNetwork();
+        instance = null;
     }
 
     public void sendMessage(String message, String destinationId) {
@@ -90,7 +92,7 @@ public class AdhocManager {
         AdhocDevice adhocDevice = adhocDeviceMap.get(destinationId);
         // 1.TODO we will need to extract public key from destination
 
-        String encryptedMessage = security.encrypt(message, adhocDevice.getEncryptionKey());
+//        String encryptedMessage = security.encrypt(message, adhocDevice.getEncryptionKey());
 
         networkManager.sendMessage(message, adhocDevice);
     }

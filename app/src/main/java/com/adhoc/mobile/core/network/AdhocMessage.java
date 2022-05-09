@@ -1,26 +1,20 @@
 package com.adhoc.mobile.core.network;
 
-import androidx.annotation.NonNull;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.Data;
+
+@Data
 public class AdhocMessage {
 
+    public String gatewayId;
     private MessageType type;
 
     public AdhocMessage() {
     }
 
     public AdhocMessage(MessageType type) {
-        this.type = type;
-    }
-
-    public MessageType getType() {
-        return type;
-    }
-
-    public void setType(MessageType type) {
         this.type = type;
     }
 
@@ -31,11 +25,5 @@ public class AdhocMessage {
         } catch (JsonProcessingException ignored) {
             return null;
         }
-    }
-
-    @NonNull
-    @Override
-    public String toString() {
-        return "MessageType=" + type;
     }
 }

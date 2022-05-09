@@ -41,18 +41,24 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
         Log.i(TAG, "Bind message=" + message.getMessageContent() + " , Int position=" + position);
 
         if (message.getMessageType().equals(Message.MESSAGE_RECEIVED_TYPE)) {
-//            holder.leftMessageLayout.setVisibility(TextView.VISIBLE);
             holder.leftMessage.setVisibility(TextView.VISIBLE);
             holder.leftMessage.setText(message.getMessageContent());
-//            holder.leftMessageLayout.setVisibility(TextView.GONE);
         } else {
-//            holder.rightMessageLayout.setVisibility(TextView.VISIBLE);
             holder.rightMessage.setVisibility(TextView.VISIBLE);
             holder.rightMessage.setText(message.getMessageContent());
-//            holder.rightMessageLayout.setVisibility(TextView.GONE);
         }
-
     }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return position;
+    }
+
 
     @Override
     public int getItemCount() {
@@ -64,22 +70,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
 
     static class MessagesHolder extends RecyclerView.ViewHolder {
 
-//        LinearLayout leftMessageLayout;
-//        LinearLayout rightMessageLayout;
-
         TextView leftMessage;
         TextView rightMessage;
 
         public MessagesHolder(@NonNull View itemView) {
             super(itemView);
 
-            if (itemView != null) {
-//                leftMessageLayout = (LinearLayout) itemView.findViewById(R.id.leftMessageLayout);
-                leftMessage = (TextView) itemView.findViewById(R.id.messageReceived);
-
-//                rightMessageLayout = (LinearLayout) itemView.findViewById(R.id.rightMessageLayout);
-                rightMessage = (TextView) itemView.findViewById(R.id.messageSent);
-            }
+            leftMessage = (TextView) itemView.findViewById(R.id.messageReceived);
+            rightMessage = (TextView) itemView.findViewById(R.id.messageSent);
         }
     }
 }

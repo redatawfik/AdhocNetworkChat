@@ -7,15 +7,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
-import java.util.Observer;
 
 public class MessageServer extends Observable {
 
     private static final MessageServer instance = new MessageServer();
     private static final Map<String, List<Message>> messagesMap = new HashMap<>();
-//    private static final Map<String, Observer> observersMap = new HashMap<>();
+
+    public static AdhocManager adhocManager;
 
     private MessageServer() {
+    }
+
+    public static MessageServer getInstance() {
+        return instance;
     }
 
     public List<Message> getMessagesForId(String id) {
@@ -31,23 +35,5 @@ public class MessageServer extends Observable {
 
         setChanged();
         notifyObservers();
-//        if (observersMap.containsKey(id)) {
-//            setChanged();
-//            notifyObservers();
-//        }
-    }
-
-//    public void addObserver(Observer observer, String id) {
-////        observersMap.put(id, observer);
-//        addObserver(observer);
-//    }
-
-//    public void removeObserver(Observer observer) {
-////        observersMap.remove(observer);
-//        deleteObserver(observer);
-//    }
-
-    public static MessageServer getInstance() {
-        return instance;
     }
 }

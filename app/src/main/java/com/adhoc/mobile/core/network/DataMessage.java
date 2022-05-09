@@ -1,5 +1,8 @@
 package com.adhoc.mobile.core.network;
 
+import lombok.Data;
+
+@Data
 public class DataMessage extends AdhocMessage {
 
     private String destinationId;
@@ -18,29 +21,5 @@ public class DataMessage extends AdhocMessage {
         this.destinationId = destinationId;
         this.originId = originId;
         this.payload = payload;
-    }
-
-    public Object getPayload() {
-        return payload;
-    }
-
-    public String getDestinationId() {
-        return destinationId;
-    }
-
-    public void setDestinationId(String destinationId) {
-        this.destinationId = destinationId;
-    }
-
-    public void setPayload(String payload) {
-        this.payload = payload;
-    }
-
-    public String getOriginId() {
-        return originId;
-    }
-
-    public void setOriginId(String originId) {
-        this.originId = originId;
     }
 }

@@ -1,25 +1,26 @@
 package com.adhoc.mobile.core.network;
 
-import androidx.annotation.NonNull;
+import lombok.Data;
 
+@Data
 public class RREP extends AdhocMessage {
 
+    private String sourceId;
+    private long sourceSequenceNumber;
     private String destinationId;
-    private long sequenceNumber;
-    private String originId;
     private int hopCount;
     private long lifetime;
 
-    @NonNull
-    @Override
-    public String toString() {
-        return "RREQ{" +
-                "type=" + getType() +
-                ", destinationId=" + destinationId +
-                ", sequenceNumber=" + sequenceNumber +
-                ", originId=" + originId +
-                ", hopCount='" + hopCount + '\'' +
-                ", lifetime=" + lifetime +
-                '}';
+    public RREP() {
+        super(MessageType.RREP);
+    }
+
+    public RREP(String destinationId, String sourceId, long sourceSequenceNumber, int hopCount, long lifetime) {
+        super(MessageType.RREP);
+        this.destinationId = destinationId;
+        this.sourceId = sourceId;
+        this.sourceSequenceNumber = sourceSequenceNumber;
+        this.hopCount = hopCount;
+        this.lifetime = lifetime;
     }
 }

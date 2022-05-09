@@ -6,4 +6,11 @@ public class Constants {
     public static final long MIN_VALID_SEQ_NUM = Long.MIN_VALUE;
     public static final int RREQ_RETRIES = 3;
     public static final int NET_TRANVERSAL_TIME = 2800;
+    public static final int NO_LIFE_TIME = -1;
+
+    public static int EXPIRED_TABLE = 10000;
+    public static int EXPIRED_TIME = EXPIRED_TABLE * 2;
+
+    // Alive time for a route
+    public static int LIFE_TIME = EXPIRED_TIME;
 }

@@ -1,30 +1,18 @@
 package com.adhoc.mobile.core.network;
 
-import androidx.annotation.NonNull;
+import java.util.List;
 
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-
+@Data
+@AllArgsConstructor
 public class Route {
+
     private String destinationId;
     private String nextHop;
     private int hopCount;
     private long destinationSequenceNumber;
     private long timeToLive;
-    private ArrayList<String> precursors;
-    private ConcurrentHashMap<String, Long> activesDataPath;
-
-    @NonNull
-    @Override
-    public String toString() {
-        return "Route{" +
-                " destinationId=" + destinationId +
-                ", nextHop=" + nextHop +
-                ", hopCount=" + hopCount +
-                ", destinationSequenceNumber='" + destinationSequenceNumber + '\'' +
-                ", timeToLive=" + timeToLive +
-                ", timeToLive=" + timeToLive +
-                '}';
-    }
+    private List<String> precursors;
 }

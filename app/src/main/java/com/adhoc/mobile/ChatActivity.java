@@ -42,7 +42,8 @@ public class ChatActivity extends AppCompatActivity implements Observer {
         name = getIntent().getStringExtra("EXTRA_NAME");
         id = getIntent().getStringExtra("EXTRA_ID");
 
-        adhocManager = AdhocManager.getInstance();
+        adhocManager = MessageServer.adhocManager;
+
         messageServer = MessageServer.getInstance();
         messageServer.addObserver(this);
 
@@ -79,10 +80,8 @@ public class ChatActivity extends AppCompatActivity implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
-//        messagesAdapter.notifyItemInserted(messages.size() - 1);
-        messagesAdapter.notifyDataSetChanged();
-        messageRecyclerView.setAdapter(messagesAdapter);
-//        messageRecyclerView.scrollToPosition(messages.size() - 1);
+        messagesAdapter.notifyItemInserted(messages.size() - 1);
+        messageRecyclerView.scrollToPosition(messages.size() - 1);
     }
 
     @Override

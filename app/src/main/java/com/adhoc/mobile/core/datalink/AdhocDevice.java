@@ -1,16 +1,15 @@
 package com.adhoc.mobile.core.datalink;
 
-import androidx.annotation.NonNull;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.Data;
+
+@Data
 public class AdhocDevice {
 
     private String name;
-
     private String id;
-
     private String encryptionKey;
 
     public AdhocDevice() {
@@ -32,30 +31,6 @@ public class AdhocDevice {
         return null;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getEncryptionKey() {
-        return encryptionKey;
-    }
-
-    public void setEncryptionKey(String encryptionKey) {
-        this.encryptionKey = encryptionKey;
-    }
-
     public String toJson() {
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -63,15 +38,5 @@ public class AdhocDevice {
         } catch (JsonProcessingException ignored) {
             return null;
         }
-    }
-
-    @NonNull
-    @Override
-    public String toString() {
-        return "AdHocDevice{" +
-                "name=" + name + '\'' +
-                ", id=" + id + '\'' +
-                ", encryptionkey=" + encryptionKey +
-                '}';
     }
 }

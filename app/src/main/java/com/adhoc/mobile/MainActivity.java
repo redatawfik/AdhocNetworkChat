@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.adhoc.mobile.core.application.AdhocManager;
 import com.adhoc.mobile.core.application.AdhocManagerCallbacks;
+import com.adhoc.mobile.core.application.MessageServer;
 import com.adhoc.mobile.core.datalink.AdhocDevice;
 
 import java.util.ArrayList;
@@ -29,6 +30,8 @@ public class MainActivity extends AppCompatActivity
         implements ContactsAdapter.RecyclerViewClickListener {
 
     private static final String[] REQUIRED_PERMISSIONS;
+    public static String tempId =
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     static {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -88,7 +91,6 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onDisconnected(String endpointId) {
 //            contactList.remove()
-
         }
 
         @Override
@@ -97,6 +99,18 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
+    /**
+     * Returns true if the app was granted all the permissions. Otherwise, returns false.
+     */
+    private static boolean hasPermissions(Context context, String... permissions) {
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(context, permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,7 +122,9 @@ public class MainActivity extends AppCompatActivity
         contactList = new ArrayList<>();
 
         name = getIntent().getStringExtra("EXTRA_NAME");
-        adhocManager = AdhocManager.getInstance(this, name, callbacks);
+//        adhocManager = AdhocManager.getInstance(this, name, callbacks);
+        MessageServer.adhocManager = AdhocManager.getInstance(this, name, callbacks);
+        adhocManager = MessageServer.adhocManager;
 
         joinButton = findViewById(R.id.joinButton);
         profileName = findViewById(R.id.profileName);
@@ -119,8 +135,7 @@ public class MainActivity extends AppCompatActivity
         contactsRecyclerView.setAdapter(contactAdapter);
         contactsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        contactList.add(new Contact("0", "seif"));
-        contactList.add(new Contact("1", "ahmed"));
+        contactList.add(new Contact(tempId, "Reda"));
 
         joinButton.setOnClickListener(view -> {
             joined = !joined;
@@ -174,18 +189,5 @@ public class MainActivity extends AppCompatActivity
             i++;
         }
         recreate();
-    }
-
-    /**
-     * Returns true if the app was granted all the permissions. Otherwise, returns false.
-     */
-    private static boolean hasPermissions(Context context, String... permissions) {
-        for (String permission : permissions) {
-            if (ContextCompat.checkSelfPermission(context, permission)
-                    != PackageManager.PERMISSION_GRANTED) {
-                return false;
-            }
-        }
-        return true;
     }
 }
