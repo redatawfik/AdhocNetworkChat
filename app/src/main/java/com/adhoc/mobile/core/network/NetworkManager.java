@@ -131,6 +131,10 @@ public class NetworkManager {
     }
 
     private void processRERR(RERR rerr) {
+        //remove unreachable from routing table
+        aodvManager.removeRouteForDestination(rerr.getUnreachableDestinationId());
+        Log.e(TAG, "Node Unreachable: " + rerr.getUnreachableDestinationId());
+        rerr.addToSeq(Long.parseLong(rerr.getUnreachableDestinationId()));
     }
 
     public void joinNetwork() {
