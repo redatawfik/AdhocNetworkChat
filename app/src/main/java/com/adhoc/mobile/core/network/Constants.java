@@ -13,4 +13,6 @@ public class Constants {
 
     // Alive time for a route
     public static int LIFE_TIME = EXPIRED_TIME;
+
+    public static int HELLO_PROTOCOL_TIMER_INTERVAL = 60000;
 }

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Utils {
-    public static AdhocMessage getObjectFromJson(String json) {
+    public static AdhocMessage getObjectFromJson(String json, String endpointId) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(
                 DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -26,8 +26,12 @@ public class Utils {
                 case RERR:
                     adhocMessage = mapper.readValue(json, RERR.class);
                     break;
+                case HELLO:
+                    adhocMessage = mapper.readValue(json, HelloMessage.class);
+                    break;
             }
 
+            adhocMessage.setGatewayId(endpointId);
             return adhocMessage;
 
         } catch (JsonProcessingException e) {

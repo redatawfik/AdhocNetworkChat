@@ -1,5 +1,6 @@
 package com.adhoc.mobile;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.EditText;
@@ -50,7 +51,7 @@ public class ChatActivity extends AppCompatActivity implements Observer {
         messages = messageServer.getMessagesForId(id);
 
         messageRecyclerView = findViewById(R.id.rvChat);
-        messageRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        messageRecyclerView.setLayoutManager(new WrapContentLinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         messagesAdapter = new MessagesAdapter(messages);
         messageRecyclerView.setAdapter(messagesAdapter);
 
@@ -88,5 +89,27 @@ public class ChatActivity extends AppCompatActivity implements Observer {
     protected void onStop() {
         super.onStop();
         messageServer.deleteObserver(this);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        messageServer.deleteObserver(this);
+        this.finish();
+    }
+}
+
+class WrapContentLinearLayoutManager extends LinearLayoutManager {
+    public WrapContentLinearLayoutManager(Context context, int orientation, boolean reverseLayout) {
+        super(context, orientation, reverseLayout);
+    }
+
+    @Override
+    public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+        try {
+            super.onLayoutChildren(recycler, state);
+        } catch (IndexOutOfBoundsException e) {
+            Log.e("TAG", "meet a IOOBE in RecyclerView");
+        }
     }
 }

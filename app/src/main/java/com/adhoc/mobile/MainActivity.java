@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity
 
     private static final String[] REQUIRED_PERMISSIONS;
     public static String tempId =
-            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+            "9336dddb-ab37-4357-a034-18fc6f1c22bf";
 
     static {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         public void onDisconnected(String endpointId) {
-//            contactList.remove()
+            // TODO(Do something when a device disconnect)
         }
 
         @Override

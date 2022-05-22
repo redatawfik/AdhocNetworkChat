@@ -6,5 +6,5 @@ public interface DataLinkCallbacks {
 
     void onDisconnected(String endpointId);
 
-    void onPayloadReceived(String message);
+    void onPayloadReceived(String message, String endpointId);
 }

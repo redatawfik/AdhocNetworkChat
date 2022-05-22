@@ -2,7 +2,10 @@ package com.adhoc.mobile.core.network;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import java.util.HashMap;
+import java.util.Map;
 
 
 public class RoutingTable {
@@ -22,6 +25,8 @@ public class RoutingTable {
             Log.i(TAG, "addRoute: Add or Update route=" + newRoute);
             table.put(newRoute.getDestinationId(), newRoute);
         }
+
+        Log.i(TAG, this.toString());
     }
 
     void removeRoute(String destinationId) {
@@ -34,5 +39,17 @@ public class RoutingTable {
 
     boolean isContainDestination(String destinationId) {
         return table.containsKey(destinationId);
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("Destination Id | destinationId | nextHop | hopCount | destinationSequenceNumber | timeToLive | precursors| \n");
+
+        for (Map.Entry<String, Route> entry : table.entrySet()) {
+            sb.append(entry.getValue().toString()).append("\n");
+        }
+
+        return sb.toString();
     }
 }

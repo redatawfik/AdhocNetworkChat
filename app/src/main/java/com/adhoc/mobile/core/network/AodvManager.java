@@ -13,7 +13,7 @@ public class AodvManager {
     private HashMap<String, Long> mapDestSequenceNumber = new HashMap<>();
 
     public void addRoute(String destinationId, String next, int hopCount,
-                         long destinationSequenceNumber, int lifeTime, List<String> precursors) {
+                         long destinationSequenceNumber, long lifeTime, List<String> precursors) {
         Route route = new Route(destinationId, next, hopCount, destinationSequenceNumber, lifeTime, precursors);
         routingTable.addRoute(route);
     }
@@ -73,5 +73,9 @@ public class AodvManager {
     public boolean isReceivedBefore(long broadcastId, String sourceId) {
         String value = sourceId + broadcastId;
         return broadcastsSet.contains(value);
+    }
+
+    public String printRoutingTable() {
+        return routingTable.toString();
     }
 }

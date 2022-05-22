@@ -28,8 +28,10 @@ public class AdhocManager {
 
         @Override
         public void onConnectionSucceed(AdhocDevice device) {
-            adhocDeviceMap.put(device.getId(), device);
-            callbacks.onConnectionSucceed(device);
+            if (!adhocDeviceMap.containsKey(device.getId())) {
+                adhocDeviceMap.put(device.getId(), device);
+                callbacks.onConnectionSucceed(device);
+            }
         }
 
         @Override

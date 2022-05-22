@@ -2,7 +2,6 @@ package com.adhoc.mobile.core.datalink;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -42,10 +41,8 @@ public class DataLinkManager {
             if (payload.getType() == Payload.Type.BYTES) {
                 byte[] receivedBytes = payload.asBytes();
                 String message = new String(receivedBytes, StandardCharsets.UTF_8);
-
                 Log.i(TAG, "Received payload : " + message);
-
-                callbacks.onPayloadReceived(message);
+                callbacks.onPayloadReceived(message, endpointId);
             }
         }
 
@@ -54,15 +51,40 @@ public class DataLinkManager {
         }
     };
 
-    private final ConnectionLifecycleCallback connectionLifecycleCallback = new ConnectionLifecycleCallback() {
-        AdhocDevice adhocDevice = null;
+    public DataLinkManager(Context context, AdhocDevice device, DataLinkCallbacks callbacks) {
+        this.myDevice = device;
+        this.context = context;
+        this.callbacks = callbacks;
+        this.connectionsClient = Nearby.getConnectionsClient(context);
+    }
 
+    AdhocDevice tempAdhocDevice = null;
+    private final ConnectionLifecycleCallback connectionLifecycleCallback = new ConnectionLifecycleCallback() {
         @Override
         public void onConnectionInitiated(@NonNull String endpointId, @NonNull ConnectionInfo connectionInfo) {
             Log.i(TAG, "Connection initiated to device=" + connectionInfo.getEndpointName());
 
+            // Control the topology of the network for testing
+/*            if (myDevice.getName().equals("1") &&
+                    connectionInfo.getEndpointName().contains("name\":\"2")) {
+                connectionsClient.acceptConnection(endpointId, payloadCallback);
+                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+            } else if (myDevice.getName().equals("2") &&
+                    (connectionInfo.getEndpointName().contains("name\":\"1") || connectionInfo.getEndpointName().contains("name\":\"3"))) {
+                connectionsClient.acceptConnection(endpointId, payloadCallback);
+                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+            } else if (myDevice.getName().equals("3") &&
+                    (connectionInfo.getEndpointName().contains("name\":\"2") || connectionInfo.getEndpointName().contains("name\":\"4"))) {
+                connectionsClient.acceptConnection(endpointId, payloadCallback);
+                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+            } else if (myDevice.getName().equals("4") &&
+                    connectionInfo.getEndpointName().contains("name\":\"3")) {
+                connectionsClient.acceptConnection(endpointId, payloadCallback);
+                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+            }*/
+
             connectionsClient.acceptConnection(endpointId, payloadCallback);
-            adhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+            tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
         }
 
         @Override
@@ -70,8 +92,10 @@ public class DataLinkManager {
             Log.i(TAG, "Connection to device with id=" + endpointId + " is " + result.getStatus());
 
             if (result.getStatus().isSuccess()) {
-                neighborDevicesMap.put(adhocDevice.getId(), endpointId);
-                callbacks.onConnectionSucceed(adhocDevice);
+                neighborDevicesMap.put(tempAdhocDevice.getId(), endpointId);
+                callbacks.onConnectionSucceed(tempAdhocDevice);
+            } else {
+                connectionsClient.requestConnection(myDevice.toJson(), endpointId, connectionLifecycleCallback);
             }
         }
 
@@ -93,6 +117,11 @@ public class DataLinkManager {
         }
     };
 
+    public void joinNetwork() {
+        startAdvertising();
+        startDiscovery();
+    }
+
     // Callbacks for finding other devices
     private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
         @Override
@@ -109,20 +138,15 @@ public class DataLinkManager {
         }
     };
 
-
-    public DataLinkManager(Context context, AdhocDevice device, DataLinkCallbacks callbacks) {
-        this.myDevice = device;
-        this.context = context;
-        this.callbacks = callbacks;
-        this.connectionsClient = Nearby.getConnectionsClient(context);
+    public void sendDirect(AdhocMessage message, String privateId) {
+        Log.i(TAG, "Send to direct message to =" + message + " , privateId=" + privateId);
+        connectionsClient.sendPayload(
+                privateId,
+                Payload.fromBytes(message.toJsonString().getBytes())
+        );
     }
 
     //---------------------------------------Public methods----------------------------------------
-
-    public void joinNetwork() {
-        startAdvertising();
-        startDiscovery();
-    }
 
     public void sendMessage(AdhocMessage message, String address) {
         Log.i(TAG, "Send message=" + message + "to address=" + address);
@@ -131,11 +155,7 @@ public class DataLinkManager {
 
         assert privateId != null;
 
-        message.setGatewayId(privateId);
-        connectionsClient.sendPayload(
-                privateId,
-                Payload.fromBytes(message.toJsonString().getBytes())
-        );
+        sendDirect(message, privateId);
     }
 
     public boolean isDirectNeighbors(String address) {
@@ -167,7 +187,6 @@ public class DataLinkManager {
         connectionsClient.stopAllEndpoints();
     }
 
-
     //---------------------------------------Private methods----------------------------------------
 
     private void startAdvertising() {
@@ -181,6 +200,7 @@ public class DataLinkManager {
                 options
         );
     }
+
 
     private void startDiscovery() {
         Log.i(TAG, "Started discovery on " + NETWORK_NAME);

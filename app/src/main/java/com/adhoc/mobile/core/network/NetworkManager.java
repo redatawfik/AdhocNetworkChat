@@ -1,5 +1,7 @@
 package com.adhoc.mobile.core.network;
 
+import static com.adhoc.mobile.core.network.Constants.HELLO_PROTOCOL_TIMER_INTERVAL;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -8,7 +10,11 @@ import com.adhoc.mobile.core.datalink.DataLinkCallbacks;
 import com.adhoc.mobile.core.datalink.DataLinkManager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Collectors;
@@ -22,6 +28,7 @@ public class NetworkManager {
     private final AdhocDevice myDevice;
     private final AodvManager aodvManager;
     private final Context context;
+    private final Map<String, Queue<DataMessage>> pendingMessages;
 
 
     private List<AdhocDevice> adhocDeviceList = new ArrayList<>();
@@ -43,9 +50,9 @@ public class NetworkManager {
         }
 
         @Override
-        public void onPayloadReceived(String message) {
+        public void onPayloadReceived(String message, String endpointId) {
             Log.i(TAG, "Payload received" + message);
-            processReceivedMessage(message);
+            processReceivedMessage(message, endpointId);
         }
     };
 
@@ -55,11 +62,12 @@ public class NetworkManager {
         this.myDevice = device;
         this.aodvManager = new AodvManager();
         dataLinkManager = new DataLinkManager(context, device, dataLinkCallbacks);
+        pendingMessages = new HashMap<>();
     }
 
-    private void processReceivedMessage(String message) {
+    private void processReceivedMessage(String message, String endpointId) {
 
-        AdhocMessage adhocMessage = Utils.getObjectFromJson(message);
+        AdhocMessage adhocMessage = Utils.getObjectFromJson(message, endpointId);
 
         switch (adhocMessage.getType()) {
             case DATA:
@@ -74,14 +82,34 @@ public class NetworkManager {
             case RERR:
                 processRERR((RERR) adhocMessage);
                 break;
+            case HELLO:
+                processHelloMessage((HelloMessage) adhocMessage);
+                break;
+        }
+    }
+
+    private void processHelloMessage(HelloMessage helloMessage) {
+        AdhocDevice adhocDevice = helloMessage.getAdhocDevice();
+        if (!aodvManager.isReceivedBefore(helloMessage.getBroadcastId(), adhocDevice.getId())) {
+            aodvManager.addBroadcast(helloMessage.getBroadcastId(), adhocDevice.getId());
+            callbacks.onConnectionSucceed(helloMessage.getAdhocDevice());
+            dataLinkManager.broadcast(helloMessage);
+        } else {
+            Log.i(TAG, "Ignore the hello message, received before. Message=" + helloMessage);
         }
     }
 
     private void processData(DataMessage dataMessage) {
-        Log.i(TAG, "Received: " + dataMessage.getPayload() + " , for id=" + dataMessage.getDestinationId());
+        Log.i(TAG, "Received: " + dataMessage + " , for id=" + dataMessage.getDestinationId());
         if (dataMessage.getDestinationId().equals(myDevice.getId())) {
             Log.i(TAG, "Received message is for this device");
             callbacks.onPayloadReceived(dataMessage.getOriginId(), dataMessage.getDestinationId(), (String) dataMessage.getPayload());
+        } else if (aodvManager.containsDestination(dataMessage.getDestinationId())) {
+
+            Route route = aodvManager.getRouteForDest(dataMessage.getDestinationId());
+            Log.i(TAG, "Received data message is not for this device, forward to:" + route);
+
+            dataLinkManager.sendDirect(dataMessage, route.getNextHop());
         } else {
             Log.i(TAG, "Received message not for this device");
         }
@@ -96,17 +124,16 @@ public class NetworkManager {
 
         rreq.incrementHopCount();
 
+        // Update routing table
+        aodvManager.addRoute(rreq.getSourceId(), rreq.getGatewayId() /* interface id*/, rreq.getHopCount(),
+                rreq.getSourceSequenceNumber(), Constants.NO_LIFE_TIME, null);
+
+
         if (rreq.getDestinationId().equals(myDevice.getId())) {
             // This node is the destination
-            // TODO(Send RREP message to the originator source of the RREQ)
-
             Log.i(TAG, "This node is the destination for RREQ=" + rreq);
             // Save the destination sequence number into a hashmap
             aodvManager.saveDestSequenceNumber(rreq.getSourceId(), rreq.getSourceSequenceNumber());
-
-            // Update routing table
-            aodvManager.addRoute(rreq.getSourceId(), rreq.getGatewayId() /* interface id*/, rreq.getHopCount(),
-                    rreq.getSourceSequenceNumber(), Constants.NO_LIFE_TIME, null);
 
 //            if (rreq.getDestinationSequenceNumber() > aodvManager.getOwnSequenceNum()) {
 //                aodvManager.getNextSequenceNumber();
@@ -114,41 +141,112 @@ public class NetworkManager {
 
             // Generate route reply
             RREP rrep = new RREP(rreq.getSourceId(), myDevice.getId(), aodvManager.getNextOwnSequenceNumber(),
-                    rreq.getHopCount(), Constants.LIFE_TIME);
+                    0, Constants.LIFE_TIME);
 
-
+            Log.i(TAG, "Send RREP=" + rrep);
             send(rrep, rreq.getSourceId());
 
         } else if (aodvManager.containsDestination(rreq.getDestinationId())) {
             // TODO(Send a RREP message to the originator of the RREQ and to the destination)
-        } else {
-            // TODO(Continue the flooding by broadcasting the RREQ to the neighbours)
 
+            Log.i(TAG, "Found destination in Routing table for RREQ=" + rreq);
+            Route route = aodvManager.getRouteForDest(rreq.getDestinationId());
+
+            RREP rrep = new RREP(rreq.getSourceId(), rreq.getDestinationId(), aodvManager.getNextOwnSequenceNumber(),
+                    route.getHopCount() + 1, Constants.LIFE_TIME);
+
+            Log.i(TAG, "Send RREP=" + rrep);
+            send(rrep, rreq.getSourceId());
+
+        } else {
+            Log.i(TAG, "Broadcast RREQ=" + rreq);
+            aodvManager.addBroadcast(rreq.getBroadcastId(), rreq.getSourceId());
+            dataLinkManager.broadcast(rreq);
         }
     }
 
     private void processRREP(RREP rrep) {
+        rrep.setHopCount(rrep.getHopCount() + 1);
+
+        Log.d(TAG, "Received RREP = " + rrep);
+        Log.i(TAG, "Routing table = " + aodvManager.printRoutingTable());
+
+        if (rrep.getDestinationId().equals(myDevice.getId())) {
+            // Save the destination sequence number into a hashmap
+            aodvManager.saveDestSequenceNumber(rrep.getSourceId(), rrep.getSourceSequenceNumber());
+
+            aodvManager.addRoute(rrep.getSourceId(), rrep.getGatewayId(), rrep.getHopCount(),
+                    rrep.getSourceSequenceNumber(), rrep.getLifetime(), null);
+
+            Log.i(TAG, "Routing table = " + aodvManager.printRoutingTable());
+
+        } else if (aodvManager.containsDestination(rrep.getDestinationId())) {
+
+            // TODO(fix null precursors)
+            aodvManager.addRoute(rrep.getSourceId(), rrep.getGatewayId(), rrep.getHopCount() + 1, rrep.getSourceSequenceNumber(), rrep.getLifetime(), null);
+            aodvManager.printRoutingTable();
+
+            Route route = aodvManager.getRouteForDest(rrep.getDestinationId());
+            dataLinkManager.sendDirect(rrep, route.getNextHop());
+        } else {
+            Log.i(TAG, "Could not find destination for RREP=" + rrep);
+        }
     }
 
     private void processRERR(RERR rerr) {
+        // TODO(Implement this)
     }
 
     public void joinNetwork() {
         dataLinkManager.joinNetwork();
+
+        startHelloMessageTimer();
+    }
+
+    private void startHelloMessageTimer() {
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                Log.i(TAG, "Start hello message task");
+                broadcastHelloMessage();
+            }
+        };
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(task, 0, HELLO_PROTOCOL_TIMER_INTERVAL);
+    }
+
+    private void broadcastHelloMessage() {
+        long broadcastId = aodvManager.getNextBroadcastId();
+        aodvManager.addBroadcast(broadcastId, myDevice.getId());
+
+        HelloMessage helloMessage = new HelloMessage(myDevice, broadcastId);
+        dataLinkManager.broadcast(helloMessage);
     }
 
     public void send(AdhocMessage message, String destinationId) {
-
         if (dataLinkManager.isDirectNeighbors(destinationId)) {
+            Log.i(TAG, "Send to direct connect message=" + message);
             dataLinkManager.sendMessage(message, destinationId);
         } else if (aodvManager.containsDestination(destinationId)) {
+            Log.i(TAG, "Send to known dest message=" + message);
             String nextHop = aodvManager.getNextHopId(destinationId);
 
-            dataLinkManager.sendMessage(message, nextHop);
+            dataLinkManager.sendDirect(message, nextHop);
         } else {
-            startTimerRREQ(destinationId, aodvManager.getNextOwnSequenceNumber(), Constants.RREQ_RETRIES,
+            Log.i(TAG, "Don't know where, so broadcast RREQ =" + message);
+            addToPendingMessages((DataMessage) message);
+            proadcastRREQ(destinationId, aodvManager.getNextOwnSequenceNumber(), Constants.RREQ_RETRIES,
                     Constants.NET_TRANVERSAL_TIME);
         }
+    }
+
+    private void addToPendingMessages(DataMessage dataMessage) {
+        if (pendingMessages.get(dataMessage.getDestinationId()) == null) {
+            Queue<DataMessage> queue = new LinkedList<>();
+            pendingMessages.put(dataMessage.getDestinationId(), queue);
+        }
+
+        pendingMessages.get(dataMessage.getDestinationId()).add(dataMessage);
     }
 
     public void sendMessage(String message, AdhocDevice destination) {
@@ -159,12 +257,11 @@ public class NetworkManager {
         send(dataMessage, destinationId);
     }
 
-
     public void leaveNetwork() {
         dataLinkManager.leaveNetwork();
     }
 
-    private void startTimerRREQ(String destinationId, long seqNumber, int retry, int time) {
+    private void proadcastRREQ(String destinationId, long seqNumber, int retry, int time) {
 
         Log.i(TAG, "Broadcast RREQ to find a destinationId=" + destinationId);
 
@@ -182,10 +279,16 @@ public class NetworkManager {
             public void run() {
                 Route route = aodvManager.getRouteForDest(destinationId);
                 if (route == null && retry != 0) {
-                    startTimerRREQ(destinationId, seqNumber, retry - 1, time * 2);
+                    proadcastRREQ(destinationId, seqNumber, retry - 1, time * 2);
                     Log.i(TAG, "Broadcast retry=" + retry + " , with " + rreqMessage);
                 } else if (route != null) {
                     // TODO(Send the message)
+
+                    while (pendingMessages.get(destinationId) != null &&
+                            !pendingMessages.get(destinationId).isEmpty()) {
+                        DataMessage dataMessage = pendingMessages.get(destinationId).poll();
+                        dataLinkManager.sendDirect(dataMessage, route.getNextHop());
+                    }
                 }
             }
         }, time);
