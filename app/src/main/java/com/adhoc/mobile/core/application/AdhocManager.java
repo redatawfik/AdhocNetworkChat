@@ -1,7 +1,5 @@
 package com.adhoc.mobile.core.application;
 
-import static com.adhoc.mobile.MainActivity.tempId;
-
 import android.content.Context;
 import android.util.Log;
 
@@ -47,23 +45,21 @@ public class AdhocManager {
         }
     };
 
-    private AdhocManager(Context context, String name, AdhocManagerCallbacks callbacks) {
+    private AdhocManager(Context context, String name, String phoneNumber, AdhocManagerCallbacks callbacks) {
         this.callbacks = callbacks;
         this.security = new Security();
         this.messageServer = MessageServer.getInstance();
         this.adhocDeviceMap = new HashMap<>();
-        adhocDeviceMap.put(tempId, new AdhocDevice("Reda", tempId, "encryption-key"));
 
-        AdhocDevice myDevice = createMyAdhocDevice(name);
+        AdhocDevice myDevice = createMyAdhocDevice(name, phoneNumber);
 
         networkManager = new NetworkManager(context, myDevice, networkCallbacks);
-
         Log.i(TAG, "A new instance of AdhocManager is created");
     }
 
-    public static AdhocManager getInstance(Context context, String name, AdhocManagerCallbacks callbacks) {
+    public static AdhocManager getInstance(Context context, String name, String phoneNumber, AdhocManagerCallbacks callbacks) {
         if (instance == null) {
-            instance = new AdhocManager(context, name, callbacks);
+            instance = new AdhocManager(context, name, phoneNumber, callbacks);
         }
         return instance;
     }
@@ -73,11 +69,11 @@ public class AdhocManager {
         return instance;
     }
 
-    private AdhocDevice createMyAdhocDevice(String name) {
+    private AdhocDevice createMyAdhocDevice(String name, String phoneNumber) {
         String uuid = getUUID();
         String encryptionKey = security.getPublicKey();
 
-        return new AdhocDevice(name, uuid, encryptionKey);
+        return new AdhocDevice(name, phoneNumber, uuid, encryptionKey);
     }
 
     public void joinNetwork() {

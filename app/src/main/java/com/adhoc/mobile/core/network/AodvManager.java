@@ -1,5 +1,8 @@
 package com.adhoc.mobile.core.network;
 
+import static com.adhoc.mobile.core.network.Constants.ACTIVE_ROUTE_TIMEOUT;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,8 +16,12 @@ public class AodvManager {
     private HashMap<String, Long> mapDestSequenceNumber = new HashMap<>();
 
     public void addRoute(String destinationId, String next, int hopCount,
-                         long destinationSequenceNumber, long lifeTime, List<String> precursors) {
-        Route route = new Route(destinationId, next, hopCount, destinationSequenceNumber, lifeTime, precursors);
+                         long destinationSequenceNumber, long lifeTime, String precursor) {
+
+        if (lifeTime == 0) lifeTime = ACTIVE_ROUTE_TIMEOUT;
+
+        Route route = new Route(destinationId, next, hopCount, destinationSequenceNumber, lifeTime,
+                Collections.singleton(precursor));
         routingTable.addRoute(route);
     }
 
@@ -77,5 +84,13 @@ public class AodvManager {
 
     public String printRoutingTable() {
         return routingTable.toString();
+    }
+
+    public List<Route> getAndRemoveRoutesWithNextHop(String privateId) {
+        return routingTable.getAndRemoveRoutesWithNextHop(privateId);
+    }
+
+    public Route getAndRemoveRouteForDestAndNextHop(String unreachableDestinationId, String gatewayId) {
+        return routingTable.getAndRemoveRouteForDestAndNextHop(unreachableDestinationId, gatewayId);
     }
 }

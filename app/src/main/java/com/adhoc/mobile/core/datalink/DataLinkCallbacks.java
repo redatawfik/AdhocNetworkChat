@@ -4,7 +4,7 @@ public interface DataLinkCallbacks {
 
     void onConnectionSucceed(AdhocDevice adhocDevice);
 
-    void onDisconnected(String endpointId);
+    void onDisconnected(String publicId, String privateId);
 
     void onPayloadReceived(String message, String endpointId);
 }

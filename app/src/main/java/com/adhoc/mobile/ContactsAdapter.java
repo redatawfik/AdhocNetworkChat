@@ -1,10 +1,12 @@
 package com.adhoc.mobile;
 
+import static com.adhoc.mobile.RandomColor.getRandomColor;
+
 import android.content.Context;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -31,7 +33,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
 
         View contactView = inflater.inflate(R.layout.item_contact, parent, false);
 
-        return new ContactsHolder(context, contactView);
+        return new ContactsHolder(contactView);
     }
 
     @Override
@@ -39,11 +41,16 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         Contact contact = contacts.get(position);
         holder.position = position;
 
-        TextView textView = holder.nameTextView;
-        textView.setText(contact.getName());
-        Button button = holder.messageButton;
-        button.setText("Message");
+        holder.nameTextView.setText(contact.getName());
+        holder.phoneNumberTextView.setText(contact.getPhoneNumber());
 
+        GradientDrawable draw = new GradientDrawable();
+        draw.setShape(GradientDrawable.OVAL);
+        draw.setColor(getRandomColor());
+        holder.chatImgTextView.setBackground(draw);
+
+        String txt = contact.getName().length() > 0 ? String.valueOf(contact.getName().charAt(0)) : "A";
+        holder.chatImgTextView.setText(txt);
     }
 
     @Override
@@ -66,21 +73,19 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
     }
 
     class ContactsHolder extends RecyclerView.ViewHolder {
-        private final Context context;
         public TextView nameTextView;
-        public Button messageButton;
+        public TextView phoneNumberTextView;
+        public TextView chatImgTextView;
         public int position;
 
-        public ContactsHolder(Context context, View itemView) {
-
+        public ContactsHolder(View itemView) {
             super(itemView);
 
-            nameTextView = (TextView) itemView.findViewById(R.id.contact_name);
-            messageButton = (Button) itemView.findViewById(R.id.message_button);
-            this.context = context;
+            nameTextView = itemView.findViewById(R.id.contact_name);
+            phoneNumberTextView = itemView.findViewById(R.id.phone_number);
+            chatImgTextView = itemView.findViewById(R.id.chat_img);
 
-            messageButton.setOnClickListener(view -> listener.onClick(position));
-
+            itemView.setOnClickListener(view -> listener.onClick(position));
         }
     }
 }

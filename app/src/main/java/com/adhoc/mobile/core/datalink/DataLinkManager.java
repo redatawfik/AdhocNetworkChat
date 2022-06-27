@@ -50,14 +50,6 @@ public class DataLinkManager {
         public void onPayloadTransferUpdate(@NonNull String s, @NonNull PayloadTransferUpdate payloadTransferUpdate) {
         }
     };
-
-    public DataLinkManager(Context context, AdhocDevice device, DataLinkCallbacks callbacks) {
-        this.myDevice = device;
-        this.context = context;
-        this.callbacks = callbacks;
-        this.connectionsClient = Nearby.getConnectionsClient(context);
-    }
-
     AdhocDevice tempAdhocDevice = null;
     private final ConnectionLifecycleCallback connectionLifecycleCallback = new ConnectionLifecycleCallback() {
         @Override
@@ -65,23 +57,27 @@ public class DataLinkManager {
             Log.i(TAG, "Connection initiated to device=" + connectionInfo.getEndpointName());
 
             // Control the topology of the network for testing
-/*            if (myDevice.getName().equals("1") &&
-                    connectionInfo.getEndpointName().contains("name\":\"2")) {
-                connectionsClient.acceptConnection(endpointId, payloadCallback);
-                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
-            } else if (myDevice.getName().equals("2") &&
-                    (connectionInfo.getEndpointName().contains("name\":\"1") || connectionInfo.getEndpointName().contains("name\":\"3"))) {
-                connectionsClient.acceptConnection(endpointId, payloadCallback);
-                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
-            } else if (myDevice.getName().equals("3") &&
-                    (connectionInfo.getEndpointName().contains("name\":\"2") || connectionInfo.getEndpointName().contains("name\":\"4"))) {
-                connectionsClient.acceptConnection(endpointId, payloadCallback);
-                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
-            } else if (myDevice.getName().equals("4") &&
-                    connectionInfo.getEndpointName().contains("name\":\"3")) {
-                connectionsClient.acceptConnection(endpointId, payloadCallback);
-                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
-            }*/
+//            if (myDevice.getName().equals("1") &&
+//                    connectionInfo.getEndpointName().contains("name\":\"2")) {
+//                connectionsClient.acceptConnection(endpointId, payloadCallback);
+//                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+//            } else if (myDevice.getName().equals("2") &&
+//                    (connectionInfo.getEndpointName().contains("name\":\"1") || connectionInfo.getEndpointName().contains("name\":\"3"))) {
+//                connectionsClient.acceptConnection(endpointId, payloadCallback);
+//                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+//            } else if (myDevice.getName().equals("3") &&
+//                    (connectionInfo.getEndpointName().contains("name\":\"2"))) {
+//                connectionsClient.acceptConnection(endpointId, payloadCallback);
+//                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+//            }
+//            else if (myDevice.getName().equals("4") &&
+//                    connectionInfo.getEndpointName().contains("name\":\"3")) {
+//                connectionsClient.acceptConnection(endpointId, payloadCallback);
+//                tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
+//            }
+
+//            connectionsClient.acceptConnection(endpointId, payloadCallback);
+//            tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
 
             connectionsClient.acceptConnection(endpointId, payloadCallback);
             tempAdhocDevice = AdhocDevice.fromJson(connectionInfo.getEndpointName());
@@ -112,16 +108,10 @@ public class DataLinkManager {
             }
 
             if (id != null) {
-                callbacks.onDisconnected(id);
+                callbacks.onDisconnected(id, endpointId);
             }
         }
     };
-
-    public void joinNetwork() {
-        startAdvertising();
-        startDiscovery();
-    }
-
     // Callbacks for finding other devices
     private final EndpointDiscoveryCallback endpointDiscoveryCallback = new EndpointDiscoveryCallback() {
         @Override
@@ -137,6 +127,18 @@ public class DataLinkManager {
             Log.i(TAG, "Lost endpoint with id = " + endpointId);
         }
     };
+
+    public DataLinkManager(Context context, AdhocDevice device, DataLinkCallbacks callbacks) {
+        this.myDevice = device;
+        this.context = context;
+        this.callbacks = callbacks;
+        this.connectionsClient = Nearby.getConnectionsClient(context);
+    }
+
+    public void joinNetwork() {
+        startAdvertising();
+        startDiscovery();
+    }
 
     public void sendDirect(AdhocMessage message, String privateId) {
         Log.i(TAG, "Send to direct message to =" + message + " , privateId=" + privateId);

@@ -11,14 +11,16 @@ public class AdhocDevice {
     private String name;
     private String id;
     private String encryptionKey;
+    private String phoneNumber;
 
     public AdhocDevice() {
     }
 
-    public AdhocDevice(String name, String id, String encryptionKey) {
+    public AdhocDevice(String name, String phoneNumber, String id, String encryptionKey) {
         this.name = name;
         this.id = id;
         this.encryptionKey = encryptionKey;
+        this.phoneNumber = phoneNumber;
     }
 
     public static AdhocDevice fromJson(String json) {

@@ -1,12 +1,18 @@
 package com.adhoc.mobile;
 
 import android.Manifest;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -14,6 +20,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -24,14 +31,13 @@ import com.adhoc.mobile.core.application.MessageServer;
 import com.adhoc.mobile.core.datalink.AdhocDevice;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements ContactsAdapter.RecyclerViewClickListener {
 
     private static final String[] REQUIRED_PERMISSIONS;
-    public static String tempId =
-            "9336dddb-ab37-4357-a034-18fc6f1c22bf";
 
     static {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -44,6 +50,7 @@ public class MainActivity extends AppCompatActivity
                             Manifest.permission.CHANGE_WIFI_STATE,
                             Manifest.permission.ACCESS_COARSE_LOCATION,
                             Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.READ_CONTACTS
                     };
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             REQUIRED_PERMISSIONS =
@@ -54,6 +61,7 @@ public class MainActivity extends AppCompatActivity
                             Manifest.permission.CHANGE_WIFI_STATE,
                             Manifest.permission.ACCESS_COARSE_LOCATION,
                             Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.READ_CONTACTS
                     };
         } else {
             REQUIRED_PERMISSIONS =
@@ -63,6 +71,7 @@ public class MainActivity extends AppCompatActivity
                             Manifest.permission.ACCESS_WIFI_STATE,
                             Manifest.permission.CHANGE_WIFI_STATE,
                             Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.READ_CONTACTS
                     };
         }
     }
@@ -70,6 +79,7 @@ public class MainActivity extends AppCompatActivity
     private final String TAG = this.getClass().getName();
     private final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
     private String name;
+    private String phoneNumber;
     private Button joinButton;
     private TextView profileName;
     private boolean joined = false;
@@ -77,15 +87,19 @@ public class MainActivity extends AppCompatActivity
     private List<Contact> contactList;
     private RecyclerView contactsRecyclerView;
     private ContactsAdapter contactAdapter;
+    private ContactsAdapter commonContactAdapter;
+    private ArrayList<Contact> localContacts;
+    private ArrayList<Contact> commonContactsOnly;
+    private boolean isContactsOnly;
 
     AdhocManagerCallbacks callbacks = new AdhocManagerCallbacks() {
         @Override
         public void onConnectionSucceed(AdhocDevice device) {
-            contactList.add(new Contact(device.getId(), device.getName()));
-            contactAdapter.notifyDataSetChanged();
-            contactsRecyclerView.setAdapter(contactAdapter);
+            Contact newContact = new Contact(device.getId(), device.getName(), device.getPhoneNumber());
+            contactList.add(newContact);
+            addToCommonContactIfExist(newContact);
 
-            Toast.makeText(MainActivity.this, "added to recycler view", Toast.LENGTH_SHORT).show();
+            updateContactsListAdapter();
         }
 
         @Override
@@ -112,18 +126,42 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+    private void updateContactsListAdapter() {
+        if (isContactsOnly) {
+            commonContactAdapter.notifyDataSetChanged();
+            contactsRecyclerView.setAdapter(commonContactAdapter);
+        } else {
+            contactAdapter.notifyDataSetChanged();
+            contactsRecyclerView.setAdapter(contactAdapter);
+        }
+    }
+
+    private void addToCommonContactIfExist(Contact newContact) {
+        for (Contact contact : localContacts) {
+            if (contact.getPhoneNumber().contains(newContact.getPhoneNumber()) ||
+                    newContact.getPhoneNumber().contains(contact.getPhoneNumber())) {
+                commonContactsOnly.add(newContact);
+                return;
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "Create new instance of MainActivity");
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Toolbar myToolbar = findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolbar);
+
+        Log.i(TAG, "Create new instance of MainActivity");
 
         contactList = new ArrayList<>();
+        localContacts = new ArrayList<>();
+        commonContactsOnly = new ArrayList<>();
 
         name = getIntent().getStringExtra("EXTRA_NAME");
-//        adhocManager = AdhocManager.getInstance(this, name, callbacks);
-        MessageServer.adhocManager = AdhocManager.getInstance(this, name, callbacks);
+        phoneNumber = getIntent().getStringExtra("EXTRA_PHONE_NUMBER");
+        MessageServer.adhocManager = AdhocManager.getInstance(this, name, phoneNumber, callbacks);
         adhocManager = MessageServer.adhocManager;
 
         joinButton = findViewById(R.id.joinButton);
@@ -132,10 +170,9 @@ public class MainActivity extends AppCompatActivity
 
         contactsRecyclerView = findViewById(R.id.rvContacts);
         contactAdapter = new ContactsAdapter(contactList, this);
+        commonContactAdapter = new ContactsAdapter(commonContactsOnly, this);
         contactsRecyclerView.setAdapter(contactAdapter);
         contactsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        contactList.add(new Contact(tempId, "Reda"));
 
         joinButton.setOnClickListener(view -> {
             joined = !joined;
@@ -149,6 +186,8 @@ public class MainActivity extends AppCompatActivity
                 joinButton.setText("Join Network");
             }
         });
+
+
     }
 
     @Override
@@ -156,6 +195,10 @@ public class MainActivity extends AppCompatActivity
         super.onStart();
         if (!hasPermissions(this, REQUIRED_PERMISSIONS)) {
             requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_REQUIRED_PERMISSIONS);
+        }
+
+        if (localContacts.size() == 0) {
+            localContacts = getContactList();
         }
     }
 
@@ -166,6 +209,7 @@ public class MainActivity extends AppCompatActivity
         intent.putExtra("EXTRA_ID", contact.getId());
         intent.putExtra("EXTRA_NAME", contact.getName());
         intent.putExtra("EXTRA_USER_NAME", name);
+        intent.putExtra("EXTRA_PHONE_NUMBER", contact.getPhoneNumber());
         startActivity(intent);
     }
 
@@ -189,5 +233,66 @@ public class MainActivity extends AppCompatActivity
             i++;
         }
         recreate();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.app_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.contacts_only:
+                if (item.isChecked()) {
+                    item.setChecked(false);
+                    isContactsOnly = false;
+                    updateContactsListAdapter();
+                } else {
+                    item.setChecked(true);
+                    isContactsOnly = true;
+                    updateContactsListAdapter();
+                }
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+
+        }
+    }
+
+    private ArrayList<Contact> getContactList() {
+        final String[] PROJECTION = new String[]{
+                ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+                ContactsContract.Contacts.DISPLAY_NAME,
+                ContactsContract.CommonDataKinds.Phone.NUMBER
+        };
+
+        ArrayList<Contact> res = new ArrayList<>();
+        ContentResolver cr = getContentResolver();
+
+        Cursor cursor = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, PROJECTION, null, null, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC");
+        if (cursor != null) {
+            HashSet<String> mobileNoSet = new HashSet<>();
+            try {
+                final int nameIndex = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME);
+                final int numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+
+                String name, number;
+                while (cursor.moveToNext()) {
+                    name = cursor.getString(nameIndex);
+                    number = cursor.getString(numberIndex);
+                    number = number.replace(" ", "");
+                    if (!mobileNoSet.contains(number)) {
+                        res.add(new Contact(name, number));
+                        mobileNoSet.add(number);
+                    }
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        return res;
     }
 }

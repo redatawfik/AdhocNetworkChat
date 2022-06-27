@@ -15,4 +15,6 @@ public class Constants {
     public static int LIFE_TIME = EXPIRED_TIME;
 
     public static int HELLO_PROTOCOL_TIMER_INTERVAL = 60000;
+
+    public static int ACTIVE_ROUTE_TIMEOUT = 300000;
 }

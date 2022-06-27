@@ -35,7 +35,7 @@ public class Security {
 
     public String getPublicKey() {
 //        return publicKey.toString();
-        return "###This is the public key###";
+        return "";
     }
 
     public void setPublicKey(PublicKey publicKey) {

@@ -1,23 +1,120 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="wrap_content"-->
+<!--    android:orientation="horizontal"-->
+<!--    android:paddingHorizontal="23dp"-->
+<!--    android:paddingTop="10dp"-->
+<!--    android:paddingBottom="10dp">-->
+
+<!--&lt;!&ndash;    <TextView&ndash;&gt;-->
+<!--&lt;!&ndash;        android:id="@+id/contact_name"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_width="0dp"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_weight="1"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:textColor="@color/primary_color" />&ndash;&gt;-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/contact_name"-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_weight="1"-->
+<!--        android:layout_centerVertical="true"-->
+<!--        android:layout_marginStart="8dp"-->
+<!--        android:layout_marginTop="12dp"-->
+<!--        android:layout_marginEnd="8dp"-->
+<!--        android:layout_toRightOf="@id/idIVContact"-->
+<!--        android:text="Contact Name"-->
+<!--        android:textColor="@color/black" />-->
+
+<!--    <Button-->
+<!--        android:id="@+id/message_button"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:background="@drawable/custom_button"-->
+<!--        android:paddingHorizontal="16dp"-->
+<!--        android:textSize="10sp" />-->
+<!--</LinearLayout>-->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginTop="12dp"
     android:orientation="horizontal"
-    android:paddingHorizontal="23dp"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp">
+    android:paddingHorizontal="14dp">
 
+    <!--    <de.hdodenhof.circleimageview.CircleImageView-->
+    <!--        android:id="@+id/chat_img"-->
+    <!--        android:layout_width="54dp"-->
+    <!--        android:layout_height="54dp"-->
+    <!--        android:layout_marginEnd="14dp"-->
+    <!--        android:src="@mipmap/ic_launcher_round"/>-->
+    <!--        android:background="@drawable/circle"-->
     <TextView
-        android:id="@+id/contact_name"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:textColor="@color/primary_color" />
+        android:id="@+id/chat_img"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:layout_marginEnd="14dp"
+        android:gravity="center_vertical"
+        android:text="A"
+        android:textAlignment="center"
+        android:textSize="44sp"
+        android:textStyle="bold"
+        tools:ignore="RtlCompat" />
 
-    <Button
-        android:id="@+id/message_button"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_below="@id/chat_img"
+        android:layout_marginTop="10dp"
+        android:layout_toEndOf="@id/chat_img"
+        android:background="#82bdbdbd"
+        android:orientation="vertical" />
+
+    <LinearLayout
+        android:id="@+id/textLL"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/custom_button"
-        android:paddingHorizontal="16dp"
-        android:textSize="10sp" />
-</LinearLayout>
+        android:layout_marginStart="68dp"
+        android:layout_marginTop="4dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/contact_name"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-light"
+            android:text="Contact Name"
+            android:textColor="#000000"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/phone_number"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="3dp"
+            android:layout_weight="1"
+            android:text="Message"
+            android:textColor="#91000000"
+            android:textSize="15sp" />
+
+    </LinearLayout>
+
+    <!--    <LinearLayout-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="match_parent"-->
+    <!--        android:gravity="end">-->
+
+    <!--        <TextView-->
+    <!--            android:id="@+id/timestamp"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:paddingTop="6dp"-->
+    <!--            android:text="9:11 AM"-->
+    <!--            android:textSize="13sp" />-->
+    <!--    </LinearLayout>-->
+
+
+</RelativeLayout>

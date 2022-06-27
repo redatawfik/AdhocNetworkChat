@@ -8,4 +8,10 @@ import lombok.Data;
 public class Contact {
     private String id;
     private String name;
+    private String phoneNumber;
+
+    public Contact(String name, String number) {
+        this.name = name;
+        this.phoneNumber = number;
+    }
 }

@@ -76,8 +76,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
         public MessagesHolder(@NonNull View itemView) {
             super(itemView);
 
-            leftMessage = (TextView) itemView.findViewById(R.id.messageReceived);
-            rightMessage = (TextView) itemView.findViewById(R.id.messageSent);
+            leftMessage = itemView.findViewById(R.id.messageReceived);
+            rightMessage = itemView.findViewById(R.id.messageSent);
         }
     }
 }

@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Collectors;
@@ -42,11 +43,12 @@ public class NetworkManager {
         }
 
         @Override
-        public void onDisconnected(String endpointId) {
-            Log.i(TAG, "Disconnect from device with id=" + endpointId);
+        public void onDisconnected(String publicId, String privateId) {
+            Log.i(TAG, "Disconnect from device with id=" + publicId);
             adhocDeviceList = adhocDeviceList.stream()
-                    .filter(e -> !e.getId().equals(endpointId)).collect(Collectors.toList());
-            callbacks.onDisconnected(endpointId);
+                    .filter(e -> !e.getId().equals(publicId)).collect(Collectors.toList());
+//            sendRERR(publicId, privateId);
+            callbacks.onDisconnected(publicId);
         }
 
         @Override
@@ -65,6 +67,24 @@ public class NetworkManager {
         pendingMessages = new HashMap<>();
     }
 
+    private void sendRERR(String publicId, String privateId) {
+        Log.i(TAG, "Send RERR to:" + privateId + "      -   " + publicId);
+
+        // 1. Remove publicId from Routing Table
+        aodvManager.removeRouteForDestination(publicId);
+
+        // 2. Get precursors which have the privateId as nextHop
+        List<Route> nodesList = aodvManager.getAndRemoveRoutesWithNextHop(privateId);
+
+        for (Route route : nodesList) {
+            Set<String> precursors = route.getPrecursors();
+            for (String pre : precursors) {
+                RERR rerr = new RERR(route.getDestinationId());
+                dataLinkManager.sendDirect(rerr, pre);
+            }
+        }
+    }
+
     private void processReceivedMessage(String message, String endpointId) {
 
         AdhocMessage adhocMessage = Utils.getObjectFromJson(message, endpointId);
@@ -80,9 +100,10 @@ public class NetworkManager {
                 processRREP((RREP) adhocMessage);
                 break;
             case RERR:
-                processRERR((RERR) adhocMessage);
+//                processRERR((RERR) adhocMessage);
                 break;
             case HELLO:
+                Log.e(TAG, aodvManager.printRoutingTable());
                 processHelloMessage((HelloMessage) adhocMessage);
                 break;
         }
@@ -108,6 +129,7 @@ public class NetworkManager {
 
             Route route = aodvManager.getRouteForDest(dataMessage.getDestinationId());
             Log.i(TAG, "Received data message is not for this device, forward to:" + route);
+            route.updateTimeToLive();
 
             dataLinkManager.sendDirect(dataMessage, route.getNextHop());
         } else {
@@ -122,44 +144,75 @@ public class NetworkManager {
             return;
         }
 
+        // TODO(Update the routing table only if the received seq number is higher)
         rreq.incrementHopCount();
 
-        // Update routing table
-        aodvManager.addRoute(rreq.getSourceId(), rreq.getGatewayId() /* interface id*/, rreq.getHopCount(),
-                rreq.getSourceSequenceNumber(), Constants.NO_LIFE_TIME, null);
-
-
+        // This is the destination node for the RREQ.
         if (rreq.getDestinationId().equals(myDevice.getId())) {
             // This node is the destination
             Log.i(TAG, "This node is the destination for RREQ=" + rreq);
             // Save the destination sequence number into a hashmap
             aodvManager.saveDestSequenceNumber(rreq.getSourceId(), rreq.getSourceSequenceNumber());
 
-//            if (rreq.getDestinationSequenceNumber() > aodvManager.getOwnSequenceNum()) {
-//                aodvManager.getNextSequenceNumber();
-//            }
+            // Update or create a route in routing table.
+            aodvManager.addRoute(rreq.getSourceId(), rreq.getGatewayId() /* interface id*/, rreq.getHopCount(),
+                    rreq.getSourceSequenceNumber(), Constants.NO_LIFE_TIME, null);
+
+
+            if (rreq.getDestinationSequenceNumber() > aodvManager.getOwnSequenceNum()) {
+                aodvManager.getNextOwnSequenceNumber();
+            }
 
             // Generate route reply
             RREP rrep = new RREP(rreq.getSourceId(), myDevice.getId(), aodvManager.getNextOwnSequenceNumber(),
-                    0, Constants.LIFE_TIME);
+                    rreq.getSourceSequenceNumber(), 0, Constants.LIFE_TIME);
 
             Log.i(TAG, "Send RREP=" + rrep);
             send(rrep, rreq.getSourceId());
 
-        } else if (aodvManager.containsDestination(rreq.getDestinationId())) {
+            // The saved seq number has to be >= rreq.seqNumber
+        } else if (aodvManager.containsDestination(rreq.getDestinationId()) &&
+                aodvManager.getRouteForDest(rreq.getDestinationId()).getDestinationSequenceNumber() >=
+                        rreq.getDestinationSequenceNumber()) {
+
             // TODO(Send a RREP message to the originator of the RREQ and to the destination)
 
             Log.i(TAG, "Found destination in Routing table for RREQ=" + rreq);
             Route route = aodvManager.getRouteForDest(rreq.getDestinationId());
+            route.getPrecursors().add(rreq.gatewayId);
 
-            RREP rrep = new RREP(rreq.getSourceId(), rreq.getDestinationId(), aodvManager.getNextOwnSequenceNumber(),
-                    route.getHopCount() + 1, Constants.LIFE_TIME);
+            route.addPrecursor(rreq.gatewayId);
+
+            // Update or create a route in routing table.
+            aodvManager.addRoute(rreq.getSourceId(), rreq.getGatewayId() /* interface id*/, rreq.getHopCount(),
+                    rreq.getSourceSequenceNumber(), Constants.NO_LIFE_TIME, route.getNextHop());
+
+            RREP rrep = new RREP(rreq.getSourceId(), rreq.getDestinationId(), route.getDestinationSequenceNumber(),
+                    rreq.getDestinationSequenceNumber(), route.getHopCount() + 1, Constants.LIFE_TIME);
 
             Log.i(TAG, "Send RREP=" + rrep);
             send(rrep, rreq.getSourceId());
 
+            // Generate gratuitous RREP
+            RREP gratuitousRREP = new RREP(rreq.getDestinationId(), rreq.getSourceId(), aodvManager.getOwnSequenceNum(),
+                    route.getDestinationSequenceNumber(), rreq.getHopCount(), Constants.LIFE_TIME);
+
+            send(gratuitousRREP, rreq.getDestinationId());
+
         } else {
             Log.i(TAG, "Broadcast RREQ=" + rreq);
+            // Set the destination sequence number to the max of the one coming from originator and
+            // one saved in this node.
+            rreq.setDestinationSequenceNumber(
+                    Math.max(
+                            aodvManager.getDestSequenceNumber(rreq.getDestinationId()),
+                            rreq.getDestinationSequenceNumber()));
+
+            // Update or create a route in routing table.
+            aodvManager.addRoute(rreq.getSourceId(), rreq.getGatewayId() /* interface id*/, rreq.getHopCount(),
+                    rreq.getSourceSequenceNumber(), Constants.NO_LIFE_TIME, null);
+
+
             aodvManager.addBroadcast(rreq.getBroadcastId(), rreq.getSourceId());
             dataLinkManager.broadcast(rreq);
         }
@@ -170,6 +223,7 @@ public class NetworkManager {
 
         Log.d(TAG, "Received RREP = " + rrep);
         Log.i(TAG, "Routing table = " + aodvManager.printRoutingTable());
+
 
         if (rrep.getDestinationId().equals(myDevice.getId())) {
             // Save the destination sequence number into a hashmap
@@ -182,19 +236,36 @@ public class NetworkManager {
 
         } else if (aodvManager.containsDestination(rrep.getDestinationId())) {
 
-            // TODO(fix null precursors)
-            aodvManager.addRoute(rrep.getSourceId(), rrep.getGatewayId(), rrep.getHopCount() + 1, rrep.getSourceSequenceNumber(), rrep.getLifetime(), null);
+            Route routeForRREPDestination = aodvManager.getRouteForDest(rrep.getDestinationId());
+
+            aodvManager.addRoute(rrep.getSourceId(), rrep.getGatewayId(), rrep.getHopCount(),
+                    rrep.getSourceSequenceNumber(), rrep.getLifetime(), routeForRREPDestination.getNextHop());
+
             aodvManager.printRoutingTable();
 
-            Route route = aodvManager.getRouteForDest(rrep.getDestinationId());
-            dataLinkManager.sendDirect(rrep, route.getNextHop());
+            dataLinkManager.sendDirect(rrep, routeForRREPDestination.getNextHop());
         } else {
+            // TODO(Raise an ERROR)
             Log.i(TAG, "Could not find destination for RREP=" + rrep);
         }
     }
 
     private void processRERR(RERR rerr) {
         // TODO(Implement this)
+        Log.i(TAG, "Received RERR, " + rerr);
+
+        /*
+        1. Get routes with rerr.getDestination as Destination and rerr.getGateway as nextHop
+        2. Remove from Routing table routes with
+        3. Send RERR to precursors
+         */
+
+        Route route = aodvManager.getAndRemoveRouteForDestAndNextHop(rerr.getUnreachableDestinationId(), rerr.getGatewayId());
+
+        for (String pre : route.getPrecursors()) {
+            RERR newRerr = new RERR(route.getDestinationId());
+            dataLinkManager.sendDirect(newRerr, pre);
+        }
     }
 
     public void joinNetwork() {
@@ -289,6 +360,9 @@ public class NetworkManager {
                         DataMessage dataMessage = pendingMessages.get(destinationId).poll();
                         dataLinkManager.sendDirect(dataMessage, route.getNextHop());
                     }
+                } else {
+                    // TODO(Raise an exception here to let the application know that the node not found)
+//                    throw new DestinationUnreachableException();
                 }
             }
         }, time);
