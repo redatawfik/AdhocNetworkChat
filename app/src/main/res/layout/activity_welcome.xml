@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
+    android:padding="10dp"
     tools:context=".WelcomeActivity">
 
     <TextView
@@ -14,7 +15,7 @@
         android:layout_marginTop="50dp"
         android:gravity="center"
         android:text="@string/welcome_to_a"
-        android:textColor="@color/ternary_color"
+        android:textColor="#455468"
         android:textSize="35sp"
         android:textStyle="bold" />
 
@@ -35,15 +36,18 @@
         android:layout_marginTop="-60dp"
         android:layout_marginBottom="10dp"
         android:gravity="center"
-        android:text="Description TODO"
-        android:textSize="20dp" />
+        android:text="This is awesome project don by us,
+you can connect to anyone without internet connection, this is a third line"
+        android:textColor="#707070"
+        android:textSize="18sp" />
 
     <Button
         android:id="@+id/getStartedButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/welcomeDescription"
+        android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
+        android:layout_marginBottom="80dp"
         android:background="@drawable/custom_button"
         android:paddingHorizontal="50dp"
         android:text="GET STARTED"

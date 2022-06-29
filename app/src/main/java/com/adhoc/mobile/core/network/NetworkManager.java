@@ -24,17 +24,18 @@ public class NetworkManager {
 
     private final String TAG = this.getClass().getName();
 
-    private final DataLinkManager dataLinkManager;
-    private final NetworkCallbacks callbacks;
-    private final AdhocDevice myDevice;
-    private final AodvManager aodvManager;
-    private final Context context;
-    private final Map<String, Queue<DataMessage>> pendingMessages;
+    private DataLinkManager dataLinkManager;
+    private NetworkCallbacks callbacks;
+    private AdhocDevice myDevice;
+    private AodvManager aodvManager;
+    private Context context;
+    private Map<String, Queue<DataMessage>> pendingMessages;
+    Timer helloMessageTask;
 
 
     private List<AdhocDevice> adhocDeviceList = new ArrayList<>();
 
-    private final DataLinkCallbacks dataLinkCallbacks = new DataLinkCallbacks() {
+    private DataLinkCallbacks dataLinkCallbacks = new DataLinkCallbacks() {
         @Override
         public void onConnectionSucceed(AdhocDevice adhocDevice) {
             Log.i(TAG, "Connection succeed to device {}" + adhocDevice);
@@ -275,15 +276,14 @@ public class NetworkManager {
     }
 
     private void startHelloMessageTimer() {
-        TimerTask task = new TimerTask() {
+        helloMessageTask = new Timer();
+        helloMessageTask.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 Log.i(TAG, "Start hello message task");
                 broadcastHelloMessage();
             }
-        };
-        Timer timer = new Timer();
-        timer.scheduleAtFixedRate(task, 0, HELLO_PROTOCOL_TIMER_INTERVAL);
+        }, 0, HELLO_PROTOCOL_TIMER_INTERVAL);
     }
 
     private void broadcastHelloMessage() {
@@ -330,6 +330,20 @@ public class NetworkManager {
 
     public void leaveNetwork() {
         dataLinkManager.leaveNetwork();
+
+        resetAll();
+    }
+
+    private void resetAll() {
+        helloMessageTask.cancel();
+        dataLinkManager = null;
+        callbacks = null;
+        myDevice = null;
+        aodvManager = null;
+        context = null;
+        pendingMessages = null;
+        adhocDeviceList = null;
+        dataLinkCallbacks = null;
     }
 
     private void proadcastRREQ(String destinationId, long seqNumber, int retry, int time) {

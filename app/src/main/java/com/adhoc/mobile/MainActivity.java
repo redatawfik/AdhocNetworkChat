@@ -15,6 +15,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -81,7 +82,7 @@ public class MainActivity extends AppCompatActivity
     private String name;
     private String phoneNumber;
     private Button joinButton;
-    private TextView profileName;
+    //    private TextView profileName;
     private boolean joined = false;
     private AdhocManager adhocManager;
     private List<Contact> contactList;
@@ -91,6 +92,8 @@ public class MainActivity extends AppCompatActivity
     private ArrayList<Contact> localContacts;
     private ArrayList<Contact> commonContactsOnly;
     private boolean isContactsOnly;
+    private ProgressBar progressBar;
+    private TextView joinTextView;
 
     AdhocManagerCallbacks callbacks = new AdhocManagerCallbacks() {
         @Override
@@ -99,12 +102,32 @@ public class MainActivity extends AppCompatActivity
             contactList.add(newContact);
             addToCommonContactIfExist(newContact);
 
+            showRecyclerView();
             updateContactsListAdapter();
         }
 
         @Override
-        public void onDisconnected(String endpointId) {
+        public void onDisconnected(String id) {
             // TODO(Do something when a device disconnect)
+            for (Contact c : contactList) {
+                if (c.getId().equals(id)) {
+                    contactList.remove(c);
+                    break;
+                }
+            }
+
+            for (Contact c : commonContactsOnly) {
+                if (c.getId().equals(id)) {
+                    commonContactsOnly.remove(c);
+                    break;
+                }
+            }
+
+            updateContactsListAdapter();
+
+            if (contactList.isEmpty()) {
+                showProgressBar();
+            }
         }
 
         @Override
@@ -124,6 +147,12 @@ public class MainActivity extends AppCompatActivity
             }
         }
         return true;
+    }
+
+    private void showRecyclerView() {
+        contactsRecyclerView.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.GONE);
+        joinTextView.setVisibility(View.GONE);
     }
 
     private void updateContactsListAdapter() {
@@ -152,6 +181,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar myToolbar = findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
+        getSupportActionBar().setTitle("Chatto");
 
         Log.i(TAG, "Create new instance of MainActivity");
 
@@ -165,8 +195,10 @@ public class MainActivity extends AppCompatActivity
         adhocManager = MessageServer.adhocManager;
 
         joinButton = findViewById(R.id.joinButton);
-        profileName = findViewById(R.id.profileName);
-        profileName.setText(name);
+        progressBar = findViewById(R.id.progress_bar);
+        joinTextView = findViewById(R.id.join_text);
+//        profileName = findViewById(R.id.profileName);
+//        profileName.setText(name);
 
         contactsRecyclerView = findViewById(R.id.rvContacts);
         contactAdapter = new ContactsAdapter(contactList, this);
@@ -177,17 +209,39 @@ public class MainActivity extends AppCompatActivity
         joinButton.setOnClickListener(view -> {
             joined = !joined;
             if (joined) {
+                if (MessageServer.adhocManager == null) {
+                    MessageServer.adhocManager = AdhocManager.getInstance(this, name, phoneNumber, callbacks);
+                    adhocManager = MessageServer.adhocManager;
+                }
+                adhocManager = MessageServer.adhocManager;
                 adhocManager.joinNetwork();
-                contactsRecyclerView.setVisibility(View.VISIBLE);
+                showProgressBar();
+//                contactsRecyclerView.setVisibility(View.VISIBLE);
                 joinButton.setText("Leave Network");
             } else {
                 adhocManager.leaveNetwork();
-                contactsRecyclerView.setVisibility(View.GONE);
+                contactList.clear();
+                commonContactsOnly.clear();
+                updateContactsListAdapter();
+                MessageServer.adhocManager = null;
+                showJoinText();
+//                contactsRecyclerView.setVisibility(View.GONE);
                 joinButton.setText("Join Network");
             }
         });
 
+    }
 
+    private void showJoinText() {
+        joinTextView.setVisibility(View.VISIBLE);
+        contactsRecyclerView.setVisibility(View.GONE);
+        progressBar.setVisibility(View.GONE);
+    }
+
+    private void showProgressBar() {
+        progressBar.setVisibility(View.VISIBLE);
+        contactsRecyclerView.setVisibility(View.GONE);
+        joinTextView.setVisibility(View.GONE);
     }
 
     @Override

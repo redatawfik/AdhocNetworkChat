@@ -16,11 +16,11 @@ public class AdhocManager {
 
     private static AdhocManager instance;
     private final String TAG = this.getClass().getName();
-    private final AdhocManagerCallbacks callbacks;
-    private final NetworkManager networkManager;
-    private final Security security;
-    private final MessageServer messageServer;
-    private final Map<String, AdhocDevice> adhocDeviceMap;
+    private AdhocManagerCallbacks callbacks;
+    private NetworkManager networkManager;
+    private Security security;
+    private MessageServer messageServer;
+    private Map<String, AdhocDevice> adhocDeviceMap;
 
     private final NetworkCallbacks networkCallbacks = new NetworkCallbacks() {
 
@@ -33,8 +33,8 @@ public class AdhocManager {
         }
 
         @Override
-        public void onDisconnected(String endpoint) {
-            callbacks.onDisconnected(endpoint);
+        public void onDisconnected(String id) {
+            callbacks.onDisconnected(id);
         }
 
         @Override
@@ -83,6 +83,11 @@ public class AdhocManager {
     public void leaveNetwork() {
         networkManager.leaveNetwork();
         instance = null;
+        callbacks = null;
+        networkManager = null;
+        security = null;
+        messageServer = null;
+        adhocDeviceMap = null;
     }
 
     public void sendMessage(String message, String destinationId) {

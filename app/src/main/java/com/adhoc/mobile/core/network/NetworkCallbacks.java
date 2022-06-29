@@ -6,7 +6,7 @@ public interface NetworkCallbacks {
 
     void onConnectionSucceed(AdhocDevice device);
 
-    void onDisconnected(String endpoint);
+    void onDisconnected(String id);
 
     void onPayloadReceived(String sourceId, String destinationId, String message);
 
